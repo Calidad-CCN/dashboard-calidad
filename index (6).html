@@ -1,0 +1,2417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#003366">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Dashboard Calidad · Cruz Nacional</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --cn-blue:#0066CC;--cn-navy:#003366;--cn-red:#FF3333;
+  --cn-blue-lt:#E6F0FA;--cn-navy-lt:#EEF2F7;
+  --ok:#1A7A3C;--ok-lt:#D4EDDA;
+  --warn:#B88A00;--warn-lt:#FFF3CD;
+  --crit:#CC0000;--crit-lt:#F8D7DA;
+  --bg:#F4F6FA;--surface:#FFFFFF;
+  --border:#D6E0EE;--text:#0D1B2E;--muted:#5A6A7E;
+  --radius:10px;--shadow:0 1px 4px rgba(0,51,102,.08),0 4px 16px rgba(0,51,102,.06);
+  --header-h:64px;
+}
+[data-theme="dark"] {
+  --bg:#0D1117;--surface:#161B22;--border:#30363D;
+  --text:#E6EDF3;--muted:#8B949E;--cn-navy-lt:#1C2128;
+  --cn-blue-lt:#1C2B3A;--ok-lt:#0D2818;--warn-lt:#2D1F00;--crit-lt:#2D0000;
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;transition:background .2s,color .2s;}
+
+/* HEADER */
+.site-header{background:var(--cn-navy);color:white;padding:0 20px;display:flex;align-items:center;gap:14px;height:var(--header-h);position:sticky;top:0;z-index:100;border-bottom:3px solid var(--cn-red);box-shadow:0 2px 10px rgba(0,0,0,.25);}
+.header-logo{height:38px;width:auto;max-width:160px;object-fit:contain;flex-shrink:0;}
+.header-title{flex:1;min-width:0;}
+.header-title h1{font-size:.88rem;font-weight:700;color:white;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.header-title p{font-size:.68rem;color:rgba(255,255,255,.6);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.header-badge{background:var(--cn-blue);color:white;padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;}
+.dark-toggle{background:rgba(255,255,255,.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.dark-toggle:hover{background:rgba(255,255,255,.22);}
+.offline-badge{background:#CC0000;color:white;padding:2px 8px;border-radius:10px;font-size:.65rem;font-weight:700;display:none;}
+.offline-badge.visible{display:inline-block;}
+
+/* CONTAINER */
+.container{max-width:1240px;margin:0 auto;padding:20px 16px 60px;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--cn-navy);border-radius:var(--radius);padding:4px;margin-bottom:20px;width:fit-content;box-shadow:var(--shadow);flex-wrap:wrap;}
+.tab-btn{padding:7px 13px;border:none;background:transparent;border-radius:7px;cursor:pointer;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.65);transition:all .15s;}
+.tab-btn.active{background:var(--cn-blue);color:white;}
+.tab-btn:hover:not(.active){color:white;background:rgba(255,255,255,.1);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* PROGRESS BAR GLOBAL */
+.progress-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin-bottom:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.progress-label{font-size:.72rem;font-weight:700;color:var(--cn-blue);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.progress-pct{font-size:1.15rem;font-weight:800;color:var(--cn-blue);min-width:55px;}
+.progress-status{font-size:.74rem;color:var(--muted);flex:1;}
+.progress-bar-wrap{flex:2;min-width:160px;height:7px;background:var(--border);border-radius:4px;}
+.progress-bar{height:100%;border-radius:4px;transition:width .3s,background .3s;}
+.areas-count{font-size:.72rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+.card-title{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cn-blue);margin-bottom:11px;border-bottom:2px solid var(--cn-blue-lt);padding-bottom:6px;}
+
+/* INPUT AREA */
+.input-area{background:var(--cn-navy-lt);border:1px solid var(--border);border-left:4px solid var(--cn-blue);border-radius:var(--radius);padding:14px;margin-bottom:16px;}
+.input-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:8px;}
+.input-group label{display:block;font-size:.7rem;font-weight:700;color:var(--cn-navy);margin-bottom:3px;}
+[data-theme="dark"] .input-group label{color:var(--cn-blue);}
+.input-group input,.input-group select{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.86rem;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;}
+.input-group input:focus,.input-group select:focus{border-color:var(--cn-blue);}
+.input-group input[readonly]{background:var(--cn-navy-lt);color:var(--muted);}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+thead th{background:var(--cn-navy);color:white;padding:8px 10px;text-align:left;font-weight:600;font-size:.68rem;letter-spacing:.04em;white-space:nowrap;position:sticky;top:0;z-index:2;}
+tbody tr:nth-child(even){background:var(--cn-navy-lt);}
+tbody tr:hover{background:var(--cn-blue-lt);}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+td.ambito-sep{background:var(--cn-navy);color:white;font-weight:700;font-size:.7rem;letter-spacing:.06em;padding:5px 10px;}
+td input[type=number]{width:62px;padding:5px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:.88rem;text-align:center;background:var(--cn-blue-lt);color:var(--cn-navy);font-weight:700;outline:none;}
+[data-theme="dark"] td input[type=number]{color:white;background:#1C2B3A;}
+td input[type=number]:focus{border-color:var(--cn-blue);background:var(--surface);}
+td input[type=text]{width:100%;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;background:var(--surface);color:var(--text);outline:none;}
+td input[type=text]:focus{border-color:var(--cn-blue);}
+.pct-cell{font-weight:700;font-size:.88rem;text-align:center;}
+.expand-btn{background:none;border:1.5px solid var(--border);border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:.82rem;font-weight:700;color:var(--cn-blue);display:inline-flex;align-items:center;justify-content:center;transition:all .15s;}
+.expand-btn:hover{background:var(--cn-blue);color:white;}
+.meta-row td{background:var(--cn-navy-lt);font-size:.74rem;color:var(--muted);padding:5px 12px;border-bottom:2px solid var(--cn-blue-lt);}
+.meta-label{font-weight:700;color:var(--cn-blue);display:inline-block;min-width:80px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.btn-primary{background:var(--cn-blue);color:white;}
+.btn-primary:hover{background:var(--cn-navy);}
+.btn-success{background:var(--ok);color:white;}
+.btn-success:hover{background:#145f2e;}
+.btn-secondary{background:var(--surface);color:var(--text);border:1.5px solid var(--border);}
+.btn-secondary:hover{border-color:var(--cn-blue);color:var(--cn-blue);}
+.btn-danger{background:var(--crit-lt);color:var(--crit);border:1px solid #F5C6CB;}
+.btn-danger:hover{background:var(--crit);color:white;}
+.btn-sm{padding:4px 9px;font-size:.7rem;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.btn-collapse{background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:5px 12px;font-size:.74rem;font-weight:600;cursor:pointer;color:var(--text);}
+.btn-collapse:hover{border-color:var(--cn-blue);color:var(--cn-blue);}
+
+/* SEGMENTED CONTROL */
+.seg-ctrl{display:flex;}
+.seg-btn{padding:5px 9px;border:1.5px solid var(--border);background:var(--surface);font-size:.7rem;font-weight:600;cursor:pointer;transition:all .12s;color:var(--muted);}
+.seg-btn:first-child{border-radius:6px 0 0 6px;}
+.seg-btn:last-child{border-radius:0 6px 6px 0;}
+.seg-btn:not(:first-child){border-left:none;}
+.seg-btn.active-cumple{background:var(--ok-lt);border-color:var(--ok);color:var(--ok);z-index:1;}
+.seg-btn.active-no{background:var(--crit-lt);border-color:var(--crit);color:var(--crit);z-index:1;}
+.seg-btn.active-na{background:var(--cn-navy-lt);border-color:#8899BB;color:var(--muted);z-index:1;}
+
+/* CHECKLIST AREAS */
+.ck-area{margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s;}
+.ck-area.area-completa{border-color:var(--ok);}
+.ck-area.area-incompleta{border-color:var(--warn);}
+.ck-header{background:var(--cn-navy);color:white;padding:9px 14px;font-weight:700;font-size:.8rem;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;transition:background .15s;}
+.ck-header:hover{background:#002255;}
+.ck-badge{margin-left:auto;font-size:.66rem;background:rgba(255,255,255,.15);padding:2px 8px;border-radius:10px;white-space:nowrap;}
+.ck-body{background:var(--surface);padding:10px 12px;}
+.ck-item{display:flex;align-items:flex-start;gap:10px;padding:5px 7px;border-radius:6px;margin-bottom:2px;}
+.ck-item:hover{background:var(--cn-blue-lt);}
+.ck-item.sin-respuesta{background:#FFF9E6;border-left:3px solid var(--warn);}
+[data-theme="dark"] .ck-item.sin-respuesta{background:#2D1F00;}
+.ck-label{flex:1;font-size:.8rem;line-height:1.4;padding-top:4px;color:var(--text);}
+.ck-obs-label{font-size:.68rem;font-weight:700;color:var(--cn-blue);display:block;margin-top:8px;margin-bottom:3px;}
+.ck-obs-general{width:100%;margin-top:4px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:.8rem;background:var(--surface);color:var(--text);outline:none;resize:vertical;min-height:48px;}
+.ck-obs-general:focus{border-color:var(--cn-blue);}
+.ck-progress-wrap{height:4px;background:var(--border);border-radius:4px;margin:6px 0 2px;}
+.ck-progress{height:100%;border-radius:4px;transition:width .3s,background .3s;}
+.ck-area-footer{display:flex;align-items:center;gap:10px;padding:4px 0 2px;}
+.ck-pct-label{font-size:.76rem;font-weight:700;min-width:55px;}
+
+/* CONTROL MEDICAMENTOS */
+.med-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:8px;}
+.med-table th{background:#2D1B69;color:white;padding:5px 8px;font-size:.68rem;font-weight:700;text-align:center;}
+.med-table th:first-child{text-align:left;}
+.med-table td{padding:5px 7px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.med-table tr:nth-child(even){background:var(--cn-navy-lt);}
+.med-fixed{font-weight:700;color:#2D1B69;}
+[data-theme="dark"] .med-fixed{color:#9B8FE8;}
+.med-input{width:60px;padding:4px 5px;border:1.5px solid var(--border);border-radius:5px;text-align:center;font-size:.82rem;font-weight:700;outline:none;background:var(--surface);color:var(--text);}
+.med-input:focus{border-color:var(--cn-blue);}
+.med-pct{font-weight:800;font-size:.88rem;text-align:center;}
+
+/* VALIDACION */
+.validation-box{background:var(--warn-lt);border:1.5px solid var(--warn);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:none;}
+.validation-box.visible{display:block;}
+.validation-box h4{color:var(--warn);font-size:.8rem;font-weight:700;margin-bottom:8px;}
+.validation-item{font-size:.76rem;color:var(--text);padding:2px 0;}
+
+/* AUTOSAVE */
+.autosave-indicator{position:fixed;bottom:16px;right:16px;background:var(--ok);color:white;padding:6px 14px;border-radius:20px;font-size:.72rem;font-weight:700;opacity:0;transition:opacity .3s;z-index:999;pointer-events:none;}
+.autosave-indicator.visible{opacity:1;}
+
+/* DASHBOARD */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+.kpi-val{font-size:1.4rem;font-weight:800;color:var(--cn-blue);line-height:1;}
+.kpi-lbl{font-size:.66rem;color:var(--muted);margin-top:4px;}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+canvas{max-height:260px;}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 0;}
+.gauge-num{font-size:1.8rem;font-weight:800;margin-top:-8px;}
+.gauge-lbl{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+
+/* BADGE */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.badge-ok{background:var(--ok-lt);color:var(--ok);}
+.badge-warn{background:var(--warn-lt);color:var(--warn);}
+.badge-crit{background:var(--crit-lt);color:var(--crit);}
+.badge-nd{background:var(--cn-navy-lt);color:var(--muted);}
+
+/* HEATMAP */
+.heatmap-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+.heatmap-table th{background:var(--cn-navy);color:white;padding:6px 8px;font-size:.68rem;text-align:center;}
+.heatmap-table th:first-child{text-align:left;}
+.heatmap-table td{padding:6px 8px;border:1px solid var(--border);text-align:center;font-weight:700;}
+.heatmap-table td.row-label{text-align:left;font-size:.76rem;font-weight:600;background:var(--cn-navy-lt);}
+.hm-ok{background:var(--ok-lt);color:var(--ok);}
+.hm-warn{background:var(--warn-lt);color:var(--warn);}
+.hm-crit{background:var(--crit-lt);color:var(--crit);}
+.hm-nd{background:var(--cn-navy-lt);color:var(--muted);}
+
+/* HISTORIAL */
+.hist-tbl th{background:var(--cn-navy);color:white;padding:7px 10px;font-size:.68rem;white-space:nowrap;}
+.hist-tbl td{padding:6px 10px;border-bottom:1px solid var(--border);font-size:.78rem;}
+.hist-tbl tr:hover td{background:var(--cn-blue-lt);}
+.action-btns{display:flex;gap:3px;}
+.pagination{display:flex;gap:4px;margin-top:12px;justify-content:center;flex-wrap:wrap;}
+.page-btn{padding:4px 10px;border:1.5px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:.76rem;font-weight:600;color:var(--text);}
+.page-btn.active{background:var(--cn-blue);color:white;border-color:var(--cn-blue);}
+.page-btn:hover:not(.active){border-color:var(--cn-blue);color:var(--cn-blue);}
+
+/* FILTROS */
+.filtros-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;}
+.filtros-bar .input-group{flex:1;min-width:120px;margin:0;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,30,60,.65);z-index:999;align-items:center;justify-content:center;padding:14px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:14px;padding:22px;max-width:820px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3);max-height:88vh;overflow-y:auto;}
+.modal-box h2{font-size:.92rem;font-weight:700;color:var(--cn-navy);margin-bottom:12px;}
+[data-theme="dark"] .modal-box h2{color:var(--cn-blue);}
+
+/* EMPTY */
+.empty{text-align:center;padding:44px 20px;color:var(--muted);}
+.empty-icon{font-size:2rem;margin-bottom:8px;}
+
+/* OFFLINE BANNER */
+.offline-banner{background:#CC0000;color:white;text-align:center;padding:6px;font-size:.76rem;font-weight:700;display:none;}
+.offline-banner.visible{display:block;}
+
+/* PDF PRINT STYLES */
+@media print{
+  .site-header,.tabs,.input-area,.btn-row,.filtros-bar,
+  .tab-panel:not(.active),.action-btns,.autosave-indicator,
+  .offline-banner,.btn-collapse,.validation-box{display:none!important;}
+  .tab-panel.active{display:block!important;}
+  .card{box-shadow:none!important;border:1px solid #DDD!important;}
+  body{background:white!important;color:black!important;}
+  .ck-area{page-break-inside:avoid;}
+}
+
+@media(max-width:768px){
+  .chart-row{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .container{padding:12px 10px 40px;}
+  .site-header{padding:0 12px;gap:8px;}
+  .header-title h1{font-size:.78rem;}
+}
+
+/* MODULO COLABORADORES */
+.colab-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:8px;}
+.colab-table th{background:#1A3A5C;color:white;padding:6px 10px;font-size:.7rem;font-weight:700;text-align:left;}
+.colab-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.colab-table tr:nth-child(even){background:var(--cn-navy-lt);}
+.colab-nombre-input{width:140px;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.8rem;background:var(--surface);color:var(--text);outline:none;}
+.colab-nombre-input:focus{border-color:var(--cn-blue);}
+.colab-pregunta-select{width:100%;padding:5px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:.78rem;background:var(--surface);color:var(--text);outline:none;}
+.colab-pregunta-select:focus{border-color:var(--cn-blue);}
+.colab-resultado{font-weight:700;font-size:.82rem;text-align:center;}
+
+/* FOTOS POR AREA */
+.foto-area-wrap{margin-top:10px;padding:10px;background:var(--cn-navy-lt);border-radius:8px;border:1.5px solid var(--border);}
+.foto-area-label{font-size:.68rem;font-weight:700;color:var(--cn-blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block;}
+.fotos-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.foto-thumb{width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid var(--border);cursor:pointer;}
+.foto-thumb:hover{border-color:var(--cn-blue);}
+.foto-upload-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border:1.5px dashed var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:.75rem;color:var(--muted);transition:all .15s;}
+.foto-upload-btn:hover{border-color:var(--cn-blue);color:var(--cn-blue);}
+.foto-input{display:none;}
+</style>
+</head>
+<body>
+
+<!-- OFFLINE BANNER -->
+<div class="offline-banner" id="offlineBanner">📡 Sin conexión — los datos se guardan localmente y se sincronizarán al volver la red</div>
+
+<!-- AUTOSAVE INDICATOR -->
+<div class="autosave-indicator" id="autosaveIndicator">✓ Guardado automáticamente</div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <img class="header-logo" src="data:image/jpeg;base64,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" alt="Clínica Cruz Nacional">
+  <div class="header-title">
+    <h1>Dashboard · Calidad en Terreno</h1>
+    <p>Clínica Cruz Nacional · v11.0</p>
+  </div>
+  <div class="header-right">
+    <div class="offline-badge" id="offlineBadge">SIN RED</div>
+    <span class="header-badge" id="visitaHeaderBadge">Nueva visita</span>
+    <button class="dark-toggle" onclick="toggleDark()" title="Modo oscuro" id="darkBtn">🌙</button>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('checklist')">✅ Checklist</button>
+  <button class="tab-btn" onclick="switchTab('indicadores')">📋 Indicadores</button>
+  <button class="tab-btn" onclick="switchTab('dashboard')">📊 Dashboard</button>
+  <button class="tab-btn" onclick="switchTab('sucursales')">🏥 Sucursales</button>
+  <button class="tab-btn" onclick="switchTab('historial')">📈 Historial</button>
+</div>
+
+<!-- TAB CHECKLIST -->
+<div class="tab-panel active" id="tab-checklist">
+  <div class="input-area">
+    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cn-blue);margin-bottom:10px">Cabecera de la visita</div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label>Sucursal</label>
+        <select id="ckSucursal" onchange="onCabeceraChange()">
+          <option value="">— Seleccione —</option>
+          <option>Santa Lucía</option><option>Maipú</option>
+          <option>Puente Alto</option><option>Independencia</option>
+          <option>San Bernardo</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Fecha de Visita</label>
+        <input type="date" id="ckFecha" onchange="onCabeceraChange()">
+      </div>
+      <div class="input-group">
+        <label>Fecha Límite Resolución</label>
+        <input type="text" id="ckFechaLimite" readonly>
+      </div>
+      <div class="input-group">
+        <label>Auditor/a</label>
+        <select id="ckAuditor" onchange="onCabeceraChange()">
+          <option value="">— Seleccione —</option>
+          <option>Paulette Courdurier</option>
+          <option>Valentina Pizarro</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Gerente Clínico presente</label>
+        <select id="ckGerente" onchange="autosaveCk()">
+          <option value="">— Seleccione —</option>
+          <option>Sí</option>
+          <option>No</option>
+          <option>Parcialmente</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- BARRA PROGRESO GLOBAL -->
+  <div class="progress-header">
+    <div class="progress-label">Progreso Checklist</div>
+    <div class="progress-pct" id="ckGlobalPct">—</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="ckGlobalBar" style="width:0%"></div></div>
+    <div class="progress-status" id="ckGlobalLabel"></div>
+    <div class="areas-count" id="ckAreasCount">0/18 áreas</div>
+    <button class="btn-collapse" onclick="colapsarTodo()">Colapsar todo</button>
+    <button class="btn-collapse" onclick="expandirTodo()">Expandir todo</button>
+  </div>
+
+  <!-- VALIDACION -->
+  <div class="validation-box" id="validationBox">
+    <h4>⚠️ Ítems sin responder — completa todo antes de guardar:</h4>
+    <div id="validationList"></div>
+  </div>
+
+  <div id="checklistContainer"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-success" onclick="guardarChecklistFinal()">💾 Guardar Visita Final</button>
+    <button class="btn btn-secondary" onclick="exportarChecklistPDF()">🖨 PDF Checklist</button>
+    <button class="btn btn-danger" onclick="limpiarChecklist()">🗑 Nueva Visita</button>
+  </div>
+</div>
+
+<!-- TAB INDICADORES -->
+<div class="tab-panel" id="tab-indicadores">
+  <div class="input-area">
+    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cn-blue);margin-bottom:10px">Datos de la visita</div>
+    <div class="input-grid">
+      <div class="input-group">
+        <label>Sucursal</label>
+        <select id="inSucursal" onchange="onInCabeceraChange()">
+          <option value="">— Seleccione —</option>
+          <option>Santa Lucía</option><option>Maipú</option>
+          <option>Puente Alto</option><option>Independencia</option>
+          <option>San Bernardo</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Fecha</label>
+        <input type="date" id="inFecha" onchange="onInCabeceraChange()">
+      </div>
+      <div class="input-group">
+        <label>N° Visita</label>
+        <input type="number" id="inNumVisita" min="1" value="1" onchange="autosaveIn()">
+      </div>
+      <div class="input-group">
+        <label>Auditor/a</label>
+        <select id="inAuditor" onchange="onInCabeceraChange()">
+          <option value="">— Seleccione —</option>
+          <option>Paulette Courdurier</option>
+          <option>Valentina Pizarro</option>
+        </select>
+      </div>
+    </div>
+    <p style="font-size:.73rem;color:var(--muted)">Ingresa <strong>Par1</strong> (cumplen) y <strong>Par2</strong> (total). Clic en <strong>[+]</strong> para ver definición. Par2=0 se excluye del cálculo.</p>
+  </div>
+  <div class="table-wrap">
+    <table><thead><tr>
+      <th style="width:26px"></th>
+      <th style="width:84px">Caract.</th>
+      <th>Indicador</th>
+      <th style="width:66px;text-align:center">Par1</th>
+      <th style="width:66px;text-align:center">Par2</th>
+      <th style="width:74px;text-align:center">%</th>
+      <th style="min-width:140px">Observaciones</th>
+    </tr></thead>
+    <tbody id="tbodyIngreso"></tbody></table>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-success" onclick="guardarVisita()">💾 Guardar Indicadores</button>
+    <button class="btn btn-secondary" onclick="exportarVisitaPDF()">🖨 PDF Indicadores</button>
+    <button class="btn btn-danger" onclick="limpiarFormulario()">🗑 Limpiar</button>
+  </div>
+</div>
+
+<!-- TAB DASHBOARD -->
+<div class="tab-panel" id="tab-dashboard">
+  <div class="filtros-bar">
+    <div class="input-group" style="flex:0 0 auto">
+      <label>Modo</label>
+      <select id="dashModo" onchange="onDashModoChange()">
+        <option value="visita">Visita específica</option>
+        <option value="sucursal">Promedio por sucursal</option>
+      </select>
+    </div>
+    <div class="input-group" style="flex:1;min-width:200px">
+      <label id="dashSel2Label">Seleccionar visita</label>
+      <select id="dashSel2" onchange="renderDashboard()"></select>
+    </div>
+  </div>
+  <div id="dashContent"><div class="empty"><div class="empty-icon">📋</div><p>Guarda una visita para ver el dashboard.</p></div></div>
+</div>
+
+<!-- TAB SUCURSALES -->
+<div class="tab-panel" id="tab-sucursales">
+  <div class="filtros-bar">
+    <div class="input-group" style="flex:0 0 auto">
+      <label>Mes</label>
+      <input type="month" id="sucMes" onchange="renderSucursales()">
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <button class="btn btn-secondary btn-sm" onclick="exportarSucursalesCSV()">⬇ CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨 PDF</button>
+    </div>
+  </div>
+  <div id="sucContent"><div class="empty"><div class="empty-icon">🏥</div><p>Selecciona un mes con visitas de distintas sucursales.</p></div></div>
+</div>
+
+<!-- TAB HISTORIAL -->
+<div class="tab-panel" id="tab-historial">
+  <div class="filtros-bar">
+    <div class="input-group">
+      <label>Sucursal</label>
+      <select id="filtSucursal" onchange="renderHistorial()">
+        <option value="">Todas</option>
+        <option>Santa Lucía</option><option>Maipú</option>
+        <option>Puente Alto</option><option>Independencia</option>
+        <option>San Bernardo</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Desde</label>
+      <input type="date" id="filtDesde" onchange="renderHistorial()">
+    </div>
+    <div class="input-group">
+      <label>Hasta</label>
+      <input type="date" id="filtHasta" onchange="renderHistorial()">
+    </div>
+    <div class="input-group">
+      <label>Auditor/a</label>
+      <select id="filtAuditor" onchange="renderHistorial()">
+        <option value="">Todas</option>
+        <option>Paulette Courdurier</option>
+        <option>Valentina Pizarro</option>
+      </select>
+    </div>
+  </div>
+  <div id="histContent"><div class="empty"><div class="empty-icon">📈</div><p>Guarda visitas para ver el historial.</p></div></div>
+</div>
+
+</div><!-- /container -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalDetalle" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 id="modalTitulo">Detalle</h2>
+      <button onclick="closeModal()" style="border:none;background:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="modalContenido"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONSTANTES
+// ══════════════════════════════════════════════
+const SUCURSALES=["Santa Lucía","Maipú","Puente Alto","Independencia","San Bernardo"];
+const AMBITOS=["DP","GCL","AOC","RH","REG","EQ","INS","AP"];
+const AMBITO_NOMBRES={DP:"Respeto Dignidad Paciente",GCL:"Gestión Clínica",AOC:"Acceso y Continuidad",RH:"Competencias RRHH",REG:"Registros",EQ:"Seg. Equipamiento",INS:"Seg. Instalaciones",AP:"Servicios de Apoyo"};
+
+// CHECKLIST — orden nuevo con numeración arábiga
+const CHECKLIST_SECCIONES=[
+  {id:"fachada",icon:"🏢",titulo:"1. Fachada e Ingreso de Pacientes",items:[
+    {id:"f1",txt:"Limpio y libre de basura"},
+    {id:"f2",txt:"Pintura y rótulos de construcción en buen estado"},
+    {id:"f3",txt:"Carteles en buen estado y actualizados"},
+    {id:"f4",txt:"Gráficas en buen estado y actualizadas"},
+    {id:"f5",txt:"Horarios correctos"},
+    {id:"f6",txt:"Se encienden carteles de acuerdo a la época (Invierno desde 18:00, verano desde 20:00)"},
+    {id:"f7",txt:"Vidrios limpios"},
+    {id:"f8",txt:"Puerta en buen estado"},
+    {id:"f9",txt:"Alfombra institucional en buen estado (en caso de uso)"},
+    {id:"f10",txt:"Pavimento sin riesgo de tropiezos (cerámicas o baldosas trizadas de 1 cm)"}
+  ]},
+  {id:"espera",icon:"🪑",titulo:"2. Sala de Espera",items:[
+    {id:"e1",txt:"Gráfica de derechos y deberes del paciente en buen estado y actualizada"},
+    {id:"e2",txt:"Folletos disponibles"},
+    {id:"e3",txt:"Alcohol gel en el mostrador"},
+    {id:"e4",txt:"Libro de Aranceles"},
+    {id:"e5",txt:"TV funcionando bien y reproduciendo contenido apropiado"},
+    {id:"e6",txt:"Mobiliario y decoración en buen estado"},
+    {id:"e7",txt:"Totem funcionando"},
+    {id:"e8",txt:"Servicios ofrecidos con precios correctos"},
+    {id:"e9",txt:"Gráfica de Gerente de Sucursal en buen estado y actualizada"},
+    {id:"e10",txt:"Cestos de basura disponibles y en buen estado"}
+  ]},
+  {id:"recepcion",icon:"💻",titulo:"3. Recepción",items:[
+    {id:"r1",txt:"Libro de reclamos, felicitaciones y sugerencias a la vista (timbrado)"},
+    {id:"r2",txt:"Patente Comercial actualizada y a la vista"},
+    {id:"r3",txt:"Transbank Funcional"},
+    {id:"r4",txt:"Caja Fuerte (con ranura)"},
+    {id:"r5",txt:"Timbres"},
+    {id:"r6",txt:"Impresoras funcionando"},
+    {id:"r7",txt:"QR de evaluación Google funcionando y a la vista"},
+    {id:"r8",txt:"El área está limpia y despejada, sin comida y con celulares guardados"},
+    {id:"r9",txt:"Recepcionistas atienden de forma cordial y amable de acuerdo a protocolo"},
+    {id:"r10",txt:"Recepcionista con uniforme institucional"}
+  ]},
+  {id:"banos",icon:"🚻",titulo:"4. Baño Pacientes",items:[
+    {id:"b1",txt:"Toallero"},
+    {id:"b2",txt:"Jabón"},
+    {id:"b3",txt:"Papel Higiénico"},
+    {id:"b4",txt:"Sanitizante"},
+    {id:"b5",txt:"Contenedor Higiénico Femenino"},
+    {id:"b6",txt:"Basurero R. Domiciliario"},
+    {id:"b7",txt:"Perchero"},
+    {id:"b8",txt:"WC en buen estado"},
+    {id:"b9",txt:"Limpio y en buen estado en general"},
+    {id:"b10",txt:"Revisar que pestillo/chapa esté funcionando"}
+  ]},
+  {id:"rayos",icon:"☢️",titulo:"5. Sala de RX",items:[
+    {id:"rx1",txt:"Gráficas en buen estado y actualizadas (Sala de Rayos, radiación, precaución mujer embarazada)"},
+    {id:"rx2",txt:"Luz Roja Funcionando"},
+    {id:"rx3",txt:"Delantal Plomado Adulto / Pediátrico y Cuello Tiroideo"},
+    {id:"rx4",txt:"Basurero R. Domiciliarios, Rotulados y con Bolsa Correspondiente Negra"},
+    {id:"rx5",txt:"Resolución de sala y Operador de Rayos"},
+    {id:"rx6",txt:"Uso correcto de dosímetro: solo en sala de rayos x"},
+    {id:"rx7",txt:"Acrílico para Resoluciones de Equipos u Hoja transparente"},
+    {id:"rx8",txt:"Programa software de Rayos Funcionando / Equipo de rayos funcionando"},
+    {id:"rx9",txt:"Perchero para delantal plomado funcionando"},
+    {id:"rx10",txt:"Ventanilla Funcional"},
+    {id:"rx11",txt:"Orden general del área"}
+  ]},
+  {id:"aseo",icon:"🧹",titulo:"6. Área de Aseo",items:[
+    {id:"as1",txt:"Área limpia y ordenada"},
+    {id:"as2",txt:"Ausencia de elementos personales"},
+    {id:"as3",txt:"Productos rotulados con fecha de apertura"},
+    {id:"as4",txt:"Disponibilidad de fichas técnicas de productos químicos"},
+    {id:"as5",txt:"Disponibilidad de hojas de seguridad de productos químicos"},
+    {id:"as6",txt:"Mobiliario en buen estado"},
+    {id:"as7",txt:"Cuenta con gráfica de área de aseo en buen estado y actualizada"},
+    {id:"as8",txt:"Señalética de piso mojado disponible"}
+  ]},
+  {id:"vacunatorio",icon:"💉",titulo:"7. Box 1 - Vacunatorio",items:[
+    {id:"v1",txt:"Refrigerador exclusivo para vacunas"},
+    {id:"v2",txt:"Termómetro Higrómetro digital en buen estado"},
+    {id:"v3",txt:"Control de Temperatura Actualizado en SerQ"},
+    {id:"v4",txt:"Gráficas en buen estado y actualizadas (Área Limpia y área sucia)"},
+    {id:"v5",txt:"Jabón Área Limpia"},
+    {id:"v6",txt:"Toallero Área Limpia"},
+    {id:"v7",txt:"Alcohol para Limpieza y Desinfección"},
+    {id:"v8",txt:"Basurero REAS Rotulados"},
+    {id:"v9",txt:"Cooler disponible"},
+    {id:"v10",txt:"EPP disponible"},
+    {id:"v11",txt:"Orden general del área"}
+  ]},
+  {id:"urgencias",icon:"🚨",titulo:"8. Urgencias - Mesón de Enfermería",items:[
+    {id:"u1",txt:"Computadores funcionales y con imed"},
+    {id:"u2",txt:"Televisores de Urgencia funcionando: con cámaras y con SAM"},
+    {id:"u3",txt:"Mesón ordenado: sin comida, sin artículos personales ni señaléticas o documentos no institucionales"},
+    {id:"u4",txt:"Impresora funcionando"},
+    {id:"u5",txt:"Refrigerador fármacos limpio y con control de temperatura y humedad"},
+    {id:"u6",txt:"Gráficas en buen estado y actualizadas (Área Limpia y área sucia delimitadas)"},
+    {id:"u7",txt:"Jabón y toallero en Área Limpia"},
+    {id:"u8",txt:"Equipo Clínico con uniforme y credencial"},
+    {id:"u9",txt:"Revisión carros enfermería (estetoscopio, 2 otoscopios/conos, baja lengua, EPP, fármacos)"},
+    {id:"u10",txt:"Monitor Signos Vitales"},
+    {id:"u11",txt:"Basurero R. Domiciliarios, Rotulados y con Bolsa Correspondiente Negra"},
+    {id:"u12",txt:"Orden general del área"}
+  ]},
+  {id:"tomaMuestra",icon:"🧪",titulo:"9. Toma de Muestra",items:[
+    {id:"tm1",txt:"Impresora etiquetas funcionando"},
+    {id:"tm2",txt:"Insumos ordenados y vigentes"},
+    {id:"tm3",txt:"Basurero REAS rotulados, funcionando y con bolsa correspondiente negra"},
+    {id:"tm4",txt:"Refrigerador limpio"},
+    {id:"tm5",txt:"Termómetro Higrómetro digital en buen estado"},
+    {id:"tm6",txt:"Mostradores limpios y organizados, sin alimentos"},
+    {id:"tm7",txt:"La sala de ginecología sin uso"},
+    {id:"tm8",txt:"Contenedores de objetos punzocortantes bajo línea de llenado, solo agujas y tubos"},
+    {id:"tm9",txt:"Pisos y sillas limpios y en buen estado"},
+    {id:"tm10",txt:"Caja de exámenes custodiados"},
+    {id:"tm11",txt:"Orden general del área"}
+  ]},
+  {id:"boxProc",icon:"🏥",titulo:"10. Box Procedimientos",items:[
+    {id:"bp1",txt:"Gráficas en buen estado y actualizadas (Área Limpia y Área Sucia)"},
+    {id:"bp2",txt:"Gráfica de Área comercial en buen estado y actualizada"},
+    {id:"bp3",txt:"Jabón y Toallero Área Limpia"},
+    {id:"bp4",txt:"Basurero R. Domiciliarios, Rotulados y con Bolsa Correspondiente Negra"},
+    {id:"bp5",txt:"Basurero de R. Especiales, rotulados y con bolsa roja correspondiente"},
+    {id:"bp6",txt:"Contenedores punzocortantes bajo línea de llenado, solo agujas y tubos"},
+    {id:"bp7",txt:"Sillones/Camillas limpias y en buen estado, apoyadas al lado reforzado en pared"},
+    {id:"bp8",txt:"Box con Resolución y prestaciones impresas"},
+    {id:"bp9",txt:"Orden general del área"}
+  ]},
+  {id:"bodega",icon:"📦",titulo:"11. Bodega",items:[
+    {id:"bo1",txt:"Refrigerador limpio, con enchufe único y exclusivo funcionando"},
+    {id:"bo2",txt:"Carpeta de Recetas medicamentos controlados"},
+    {id:"bo3",txt:"Registro control de insumos"},
+    {id:"bo4",txt:"Fármacos controlados en caja doble llave (2 cajas doble llave)"},
+    {id:"bo5",txt:"Estantes limpios e insumos ordenados"},
+    {id:"bo6",txt:"Termómetro Higrómetro digital en buen estado"},
+    {id:"bo7",txt:"Control de Temperatura y humedad actualizado en SerQ"},
+    {id:"bo8",txt:"Medicamentos Vigentes y de acuerdo a protocolo"},
+    {id:"bo9",txt:"Bodega libre de cajas e insumos"}
+  ],tieneControlMed:true},
+  {id:"reas",icon:"♻️",titulo:"12. Sala REAS",items:[
+    {id:"re1",txt:"Gráfica Sala de REAS con puerta cerrada en buen estado y actualizada"},
+    {id:"re2",txt:"Gráfica de No Entrar Acceso Restringido en buen estado y actualizada"},
+    {id:"re3",txt:"Gráfica y basurero de R. Domiciliarios con bolsa correspondiente"},
+    {id:"re4",txt:"Gráfica y basurero de R. Especiales con bolsa correspondiente"},
+    {id:"re5",txt:"Gráfica y basurero de R. Peligrosos con bolsa correspondiente"},
+    {id:"re6",txt:"Hojas de Registro de Ingreso y Egreso de REAS"},
+    {id:"re7",txt:"Luces Funcionales"},
+    {id:"re8",txt:"Balanza para pesar Basura"},
+    {id:"re9",txt:"Lavamanos en buen estado"},
+    {id:"re10",txt:"Cuenta con guantes, lentes, pechera y botas"}
+  ]},
+  {id:"restringida",icon:"🚫",titulo:"13. Área Restringida Pacientes",items:[
+    {id:"ar1",txt:"Gráfica Área de Personal en buen estado y actualizada"},
+    {id:"ar2",txt:"Gráfica de No Entrar en buen estado y actualizada"},
+    {id:"ar3",txt:"Paredes y techos en buen estado"},
+    {id:"ar4",txt:"Gráfica de vestidores en buen estado y actualizada"},
+    {id:"ar5",txt:"Control de marcaje Buk funcionando"},
+    {id:"ar6",txt:"Lockers limpios y ordenados"},
+    {id:"ar7",txt:"Lockers sin alimentos"},
+    {id:"ar8",txt:"WC en buen estado"},
+    {id:"ar9",txt:"Baños limpios, ordenados y equipados"},
+    {id:"ar10",txt:"Pestillos de baños funcionando"}
+  ]},
+  {id:"comedor",icon:"☕",titulo:"14. Comedor",items:[
+    {id:"co1",txt:"Microondas y hervidor limpio y funcional"},
+    {id:"co2",txt:"Información de Metas al día / Looker"},
+    {id:"co3",txt:"Refrigerador limpio y funcional"},
+    {id:"co4",txt:"Cafetera limpia y funcional"},
+    {id:"co5",txt:"Dispensador eléctrico de agua cargado"},
+    {id:"co6",txt:"Mesa limpia y ordenada"},
+    {id:"co7",txt:"Utensilios cocina (esponja, lava loza, paño, etc)"},
+    {id:"co8",txt:"Bidones de agua disponible"},
+    {id:"co9",txt:"Lavaplatos con loza ordenada"},
+    {id:"co10",txt:"Basurero Domiciliario funcionando"}
+  ]},
+  {id:"colaboradores",icon:"👥",titulo:"15. Colaboradores",tieneColaboradores:true,items:[
+    {id:"cl1",txt:"Personal sabe bonos y estado de sus metas"},
+    {id:"cl2",txt:"Recepcionista se presenta por su nombre y muestra trato amable hacia el paciente"},
+    {id:"cl3",txt:"Recepcionista ofrece Unión Salud y entrega volante"},
+    {id:"cl4",txt:"Recepcionista saca número de totem para ingresar paciente a Keiron si es necesario"},
+    {id:"cl5",txt:"Personal de salud ofrece Unión Salud durante la atención"},
+    {id:"cl6",txt:"Personal de salud sigue las indicaciones del médico"},
+    {id:"cl7",txt:"Personal cumple con buena presentación personal"},
+    {id:"cl8",txt:"Personal de salud muestra un trato amable hacia el paciente en la atención"},
+    {id:"cl9",txt:"Gerente de Sucursal entrega información a sus colaboradores de temas semanales"},
+    {id:"cl10",txt:"Enfermera Jefa de Turno realiza reunión daily en la mañana"}
+  ]},
+  {id:"gerente",icon:"🗂️",titulo:"16. Oficina Gerente de Sucursal",items:[
+    {id:"g1",txt:"Carpeta de Calidad y Acreditación Drive (Protocolos actualizados)"},
+    {id:"g2",txt:"Carpeta con Doc (Res. Sala Proc, Res. Rayos, Res. Botiquín, Certificado Op. Rayos, Doc. Estudiantes)"},
+    {id:"g3",txt:"Carpeta Dirección del Trabajo - BUK: contratos, RIOHS firmados, anexos"},
+    {id:"g4",txt:"Computador funcional"},
+    {id:"g5",txt:"Teléfonos etiquetados para llamadas de emergencia y número de control de envenenamiento"},
+    {id:"g6",txt:"Plataforma Portal Colaboradores Cruz Nacional"},
+    {id:"g7",txt:"Caja fuerte"},
+    {id:"g8",txt:"Caja de llaves clínica completa"},
+    {id:"g9",txt:"Escritorio limpio y ordenado"},
+    {id:"g10",txt:"Credenciales genéricas disponibles"},
+    {id:"g11",txt:"Orden general del área"}
+  ]},
+  {id:"areasGen",icon:"🏗️",titulo:"17. Áreas en General",items:[
+    {id:"ag1",txt:"Estado de muros y pintura en buen estado"},
+    {id:"ag2",txt:"Carteles limpios y en buen estado"},
+    {id:"ag3",txt:"Escaleras limpias"},
+    {id:"ag4",txt:"Presencia de elementos no institucionales"},
+    {id:"ag5",txt:"Alumbrado General"},
+    {id:"ag6",txt:"Colaboradores con uniforme institucional o color según estamento"},
+    {id:"ag7",txt:"No se almacenan equipos ni cajas innecesarias en los pasillos"},
+    {id:"ag8",txt:"Extintores vigentes"},
+    {id:"ag9",txt:"Plan de emergencia y evacuación disponible y actualizado"},
+    {id:"ag10",txt:"Insumos de aseo ordenados con hojas de seguridad"}
+  ]},
+  {id:"senaleticas",icon:"🪧",titulo:"18. Señaléticas",items:[
+    {id:"sg1",txt:"Planes de Evacuación"},
+    {id:"sg2",txt:"Planos por piso"},
+    {id:"sg3",txt:"Señalética de extintores en buen estado"},
+    {id:"sg4",txt:"Señalética medidas Covid-19"},
+    {id:"sg5",txt:"Salida de Emergencia en buen estado"},
+    {id:"sg6",txt:"Señalética Zona segura buen estado"},
+    {id:"sg7",txt:"Señalética de aseo en buen estado"},
+    {id:"sg8",txt:"Señalética de Piso Húmedo"},
+    {id:"sg9",txt:"Señalética Bodega personal autorizado y botiquín en buen estado"},
+    {id:"sg10",txt:"Señalética Toma de muestra en buen estado y actualizada (si aplica)"}
+  ]}
+];
+
+const INDICADORES=[
+  {cod:"DP",car:"DP-1.1",ind:"[Red] Cumplimiento con la Identificación de los Colaboradores",det:"Se evaluará que los colaboradores porten su identificación al momento de la visita en terreno.",p1def:"Nº colaboradores que cumplen la política de identificación al momento de la visita",p2def:"Nº total de colaboradores presentes supervisados"},
+  {cod:"DP",car:"DP-1.2",ind:"[Red] Gestión reclamos/felicitaciones",det:"Se evaluará que los colaboradores sepan cómo se canalizan los reclamos/felicitaciones.",p1def:"Nº colaboradores que conocen gestión de reclamos/felicitaciones según protocolo",p2def:"Nº total de colaboradores consultados"},
+  {cod:"DP",car:"DP-1.2",ind:"[Red] Reclamos revisados en libro",det:"Se evaluará que la gestión de reclamos sea ingresada acorde a protocolo.",p1def:"Nº de reclamos ingresados en el libro conforme a protocolo en el periodo",p2def:"Nº total de reclamos registrados en el libro en el periodo"},
+  {cod:"DP",car:"DP-1.3",ind:"[Red] Cumplimiento Encuesta de Satisfacción paciente",det:"Se evaluará que se esté aplicando la encuesta de Satisfacción al paciente que ingresa a Urgencias.",p1def:"Nº total de encuestas respondidas acorde a protocolo en periodo evaluado",p2def:"Nº total de encuestas programadas en el mismo periodo"},
+  {cod:"DP",car:"DP-2.1",ind:"[Red] Registro de Consentimientos informados Ingreso a Urgencias",det:"Se medirá que todos los pacientes que ingresan a Urgencias hayan firmado el consentimiento informado.",p1def:"Nº muestral de consentimientos informados que cumplen con normativa institucional",p2def:"Nº total de pacientes que ingresan a Urgencia en el periodo evaluado"},
+  {cod:"DP",car:"DP-2.1",ind:"[Red] Registro de consentimientos informados para tratamientos invasivos",det:"Se medirá que los pacientes sometidos a tratamientos de mayor riesgo (Sutura) hayan firmado el consentimiento.",p1def:"Nº muestral de consentimientos informados que cumplen con normativa institucional",p2def:"Nº procedimientos realizados en el periodo"},
+  {cod:"DP",car:"DP-5.1",ind:"[Red] Acceso al Comité de ética",det:"Se evaluará que los colaboradores conozcan cómo acceder al comité de ética.",p1def:"Nº de colaboradores que responden correctamente a la pregunta de acceso a comité de ética",p2def:"Nº total de colaboradores entrevistados"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Supervisión protocolo curación compleja según norma",det:"Se evaluará que la técnica de curación compleja sea según protocolo.",p1def:"Nº de pautas de supervisión de curaciones complejas que cumplen protocolo",p2def:"Nº total de pautas de supervisión de curación compleja evaluadas"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Cumplimiento preparación y administración de medicamentos EV según protocolo",det:"Se supervisará que la preparación y administración de medicamentos endovenosos sea acorde a la norma.",p1def:"Nº de pautas de administración EV que cumplen protocolo",p2def:"Nº total de pautas de administración EV aplicadas"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Supervisión instalación vía venosa periférica según norma",det:"Se supervisará la instalación de la vía venosa acorde a la norma institucional.",p1def:"Nº de pautas de instalación VVP que cumplen protocolo",p2def:"Nº total de pautas de instalación VVP aplicadas"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Supervisión manejo cadena de frío según norma",det:"Se medirá que el manejo de la cadena de frío de vacunas esté dentro del protocolo.",p1def:"Nº de pautas de supervisión cadena de frío que cumplen protocolo",p2def:"Nº total de pautas de supervisión cadena de frío"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Realización pautas preparación y administración medicamentos EV según protocolo",det:"Se medirá que se realicen las pautas programadas de preparación EV según protocolo.",p1def:"Nº de pautas de preparación EV realizadas según protocolo",p2def:"Nº total de pautas de preparación EV programadas"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Supervisión instalación Sonda Foley según protocolo",det:"Se supervisará que la instalación de sonda foley sea correcta acorde a protocolo.",p1def:"Nº de pautas de instalación sonda foley que cumplen protocolo",p2def:"Nº total de pautas de instalación de catéter urinario realizadas"},
+  {cod:"GCL",car:"GCL-1.3",ind:"[Red] Supervisión instalación Catéter urinario según norma",det:"Se supervisará que la instalación de catéter urinario sea acorde a la norma institucional.",p1def:"Nº de pautas de instalación catéter urinario que cumplen protocolo",p2def:"Nº total de pautas de instalación de catéter urinario realizadas"},
+  {cod:"GCL",car:"GCL-2.2",ind:"[Red] Notificación de Evento Adverso/Evento centinela",det:"Se evaluará que la notificación de EA/EC sea según protocolo.",p1def:"Nº de eventos adversos y centinela notificados según protocolo",p2def:"Nº total de eventos adversos y centinela notificados"},
+  {cod:"GCL",car:"GCL-3.2",ind:"[Red] Cumplimiento protocolo lavado de manos",det:"Se medirá que el lavado de manos sea realizado según protocolo.",p1def:"Nº de pautas de lavado de manos que cumplen criterios del protocolo",p2def:"Nº total de pautas de lavado de manos aplicadas"},
+  {cod:"GCL",car:"GCL-3.2",ind:"[Red] Cumplimiento uso Elementos de Protección Personal",det:"Se evaluará que el personal clínico use sus EPP al atender pacientes.",p1def:"Nº de pautas de uso EPP que cumplen protocolo",p2def:"Nº total de pautas de uso EPP realizadas"},
+  {cod:"AOC",car:"AOC-1.1",ind:"[Red] Activación de Clave Azul",det:"Se evaluará que los colaboradores sepan cómo activar la Clave Azul.",p1def:"Nº de colaboradores que responden correctamente sobre Activación de Clave Azul",p2def:"Nº total de colaboradores entrevistados"},
+  {cod:"AOC",car:"AOC-1.1",ind:"[Red] Revisión Stock Insumos Bolso de Emergencia",det:"Se medirá que el bolso de emergencia tenga su stock completo.",p1def:"Nº de pautas de supervisión de Stock Bolso Emergencia que cumplen",p2def:"Nº total de pautas de supervisión de Stock Bolso Emergencia programadas"},
+  {cod:"AOC",car:"AOC-1.2",ind:"[Red] Notificación resultados críticos imagenología según protocolo",det:"Se medirá que los resultados críticos de imagenología sean notificados dentro del tiempo establecido.",p1def:"Nº de resultados críticos imagenológicos informados dentro de plazo",p2def:"Nº total de resultados críticos imagenológicos del período"},
+  {cod:"AOC",car:"AOC-1.2",ind:"[Red] Notificación resultados críticos laboratorio según protocolo",det:"Se medirá que los resultados críticos de laboratorio sean notificados dentro del tiempo establecido.",p1def:"Nº de resultados críticos de laboratorio informados dentro de plazo",p2def:"Nº total de resultados críticos de laboratorio del período"},
+  {cod:"RH",car:"RH-1.1",ind:"[Red] Registro SIS Médicos",det:"Se evaluará que los médicos cuenten con habilitación SIS subida al sistema.",p1def:"Nº médicos generales que ingresan con SIS subido a sistema",p2def:"Nº total de médicos generales que ingresan a la sucursal"},
+  {cod:"RH",car:"RH-1.2",ind:"[Red] Registro SIS Enfermeras",det:"Se evaluará que las enfermeras cuenten con habilitación SIS subida a SerQ.",p1def:"Nº enfermeras que ingresan con habilitación SIS en plataforma",p2def:"Nº total de enfermeras que ingresan a la sucursal"},
+  {cod:"RH",car:"RH-1.2",ind:"[Red] Registro SIS Técnico en Enfermería",det:"Se evaluará que los Técnicos en Enfermería cuenten con habilitación SIS.",p1def:"Nº técnicos en enfermería con habilitación SIS subida a SerQ",p2def:"Nº total de técnicos en enfermería que ingresan"},
+  {cod:"RH",car:"RH-1.2",ind:"Registro SIS Tecnólogo Médico",det:"Se evaluará que todos los TM cuenten con habilitación SIS subida a SerQ.",p1def:"Nº TM con habilitación SIS en plataforma",p2def:"Nº total de TM que ingresan"},
+  {cod:"RH",car:"RH-2.1",ind:"[Red] Ejecución Programa de Inducción según protocolo",det:"Cada colaborador que ingresa debe pasar por programa de inducción.",p1def:"Nº colaboradores con inducción realizada y respaldada en SerQ",p2def:"Nº colaboradores que ingresaron y corresponde inducción"},
+  {cod:"RH",car:"RH-2.1",ind:"[Red] Pauta de Inducción",det:"Se medirá que todos los colaboradores que ingresan reciban pauta de inducción.",p1def:"Nº colaboradores que ingresaron y recibieron pauta de inducción",p2def:"Nº total de colaboradores ingresados"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Ejecución Programa Orientación Enfermeras",det:"Se medirá que las enfermeras que ingresan pasen por programa de orientación.",p1def:"Nº enfermeras con programa de orientación ejecutado en el primer mes",p2def:"Nº total de enfermeras sujetas a evaluación"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Ejecución Programa Orientación Médicos",det:"Se medirá que los médicos que ingresan pasen por programa de orientación.",p1def:"Nº médicos con programa de orientación ejecutado en el primer mes",p2def:"Nº total de médicos sujetos a evaluación"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Ejecución Programa Orientación Recepcionista",det:"Se medirá que las recepcionistas que ingresan pasen por programa de orientación.",p1def:"Nº recepcionistas con programa de orientación ejecutado en el primer mes",p2def:"Nº total de recepcionistas sujetas a evaluación"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Ejecución Programa Orientación Tens Enfermería/RX",det:"Se medirá que los Tens de Enfermería/Rx que ingresan pasen por programa de orientación.",p1def:"Nº TENS con programa de orientación ejecutado en el primer mes",p2def:"Nº total de TENS sujetos a evaluación"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Pauta de Orientación Enfermeras",det:"Se medirá que las enfermeras que ingresan reciban pauta de orientación.",p1def:"Nº enfermeras que ingresaron y recibieron pauta de orientación",p2def:"Nº total de enfermeras ingresadas"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Pauta de Orientación Médico",det:"Se medirá que los médicos que ingresan reciban pauta de orientación.",p1def:"Nº médicos que ingresaron y recibieron pauta de orientación",p2def:"Nº total de médicos ingresados"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Pauta de Orientación Recepcionista",det:"Se medirá que las recepcionistas que ingresan reciban pauta de orientación.",p1def:"Nº recepcionistas que ingresaron y recibieron pauta de orientación",p2def:"Nº total de recepcionistas ingresadas"},
+  {cod:"RH",car:"RH-2.2",ind:"[Red] Pauta de Orientación Tens Enfermería/Rx",det:"Se medirá que los Tens enfermería/Rx que ingresan reciban pauta de orientación.",p1def:"Nº colaboradores Tens que ingresaron y recibieron pauta de orientación",p2def:"Nº total de colaboradores Tens ingresados"},
+  {cod:"RH",car:"RH-3.1",ind:"[Red] Programa de capacitación en RCP",det:"Se medirá que el personal tenga su curso de RCP vigente.",p1def:"Nº de personas capacitadas en RCP en la clínica",p2def:"Nº de personas que corresponden a la dotación"},
+  {cod:"RH",car:"RH-4.1",ind:"[Red] Conocimiento de Dosimetría",det:"Se evaluará que los colaboradores de sala de rayos tomen conocimiento de su dosimetría.",p1def:"Nº colaboradores que firman tomar conocimiento de su dosimetría",p2def:"Nº total de colaboradores que poseen dosímetro"},
+  {cod:"RH",car:"RH-4.1",ind:"[Red] Recepción de dosímetro",det:"Se evaluará que los colaboradores de sala de rayos reciban su dosímetro conforme a protocolo.",p1def:"Nº colaboradores que firman recepción de dosímetro",p2def:"Nº total de colaboradores que poseen dosímetro"},
+  {cod:"RH",car:"RH-4.2",ind:"[Red] Manejo accidente cortopunzante",det:"Se evaluará que los colaboradores conozcan qué hacer ante un accidente cortopunzante.",p1def:"Nº colaboradores que responden correctamente sobre manejo de accidente cortopunzante",p2def:"Nº total de colaboradores entrevistados"},
+  {cod:"RH",car:"RH-4.2",ind:"[Red] Registro de accidentes cortopunzantes",det:"Se evaluará que el 100% de los accidentes cortopunzantes sean registrados según protocolo.",p1def:"Nº de accidentes cortopunzantes gestionados según protocolo",p2def:"Nº total de accidentes cortopunzantes del periodo"},
+  {cod:"REG",car:"REG-1.2",ind:"[Red] Cumplimiento del registro de ficha clínica",det:"Se evaluará que el registro de atenciones en ficha clínica cumpla las normas institucionales.",p1def:"Nº de fichas clínicas revisadas que cumplen criterios evaluados",p2def:"Nº total de fichas clínicas revisadas"},
+  {cod:"REG",car:"REG-1.3",ind:"[Red] Cumplimiento entrega indicaciones post tratamiento",det:"Se evaluará que se entreguen indicaciones a los pacientes al momento del alta médica.",p1def:"Nº de indicaciones al alta completas entregadas en la muestra",p2def:"Nº total de fichas clínicas de la muestra aleatoria"},
+  {cod:"REG",car:"REG-1.4",ind:"[Red] Gestión de Solicitud y Entrega de ficha clínica al paciente",det:"Se evaluará que la solicitud y entrega de fichas clínicas sea acorde a protocolo.",p1def:"Nº de fichas solicitadas y entregadas que cumplen criterios del protocolo",p2def:"Nº total de fichas clínicas solicitadas y entregadas"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Chequeo carga de DEA",det:"Se revisará que el DEA se encuentre con carga.",p1def:"Nº de DEA chequeados con correcta carga",p2def:"Nº total de chequeos de carga de DEA programados"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Chequeo de MSV",det:"Se revisará que los MSV se encuentren en correcto funcionamiento.",p1def:"Nº de MSV chequeados con correcto funcionamiento",p2def:"Nº total de chequeos de funcionamiento MSV programados"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Mantención preventiva camillas",det:"Se revisará que se realice la mantención preventiva de camillas según calendario.",p1def:"Nº de camillas que reciben mantención preventiva según norma",p2def:"Nº de camillas con mantención preventiva programada"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Mantención preventiva Desfibrilador",det:"Se evaluará que se realice la mantención preventiva del desfibrilador según calendario.",p1def:"Nº de desfibriladores que reciben mantención preventiva",p2def:"Nº de desfibriladores con mantención preventiva programada"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Mantención preventiva MSV",det:"Se evaluará que se realice la mantención preventiva de MSV según calendario.",p1def:"Nº de MSV que reciben mantención preventiva según norma",p2def:"Nº MSV con mantención preventiva programada"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Mantención preventiva Refrigeradores",det:"Se evaluará que se realice la mantención preventiva de refrigeradores según calendario.",p1def:"Nº de refrigeradores que reciben mantención preventiva según norma",p2def:"Nº de refrigeradores con mantención preventiva programada"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Realización Pauta Chequeo carga DEA",det:"Se evaluará que se realicen las pautas programadas de chequeo DEA.",p1def:"Nº de pautas de chequeo carga DEA realizadas",p2def:"Nº total de pautas de chequeo carga DEA programadas"},
+  {cod:"EQ",car:"EQ-2.1",ind:"[Red] Realización Pautas chequeo MSV",det:"Se evaluará que se realicen las pautas programadas de chequeo MSV.",p1def:"Nº de pautas de chequeo MSV realizadas",p2def:"Nº total de pautas de chequeo MSV programadas"},
+  {cod:"EQ",car:"EQ-2.2",ind:"[Red] Mantención preventiva Rx Osteopulmonar",det:"Se evaluará que se realice la mantención preventiva del equipo de rayos según calendario.",p1def:"Nº de equipos de Rayos que reciben mantención preventiva según norma",p2def:"Nº de equipos de rayos con mantención preventiva programada"},
+  {cod:"EQ",car:"EQ-3.1",ind:"[Red] Resolución Operador de Rayos",det:"Se evaluará que al menos un colaborador cuente con resolución de operador de rayos.",p1def:"Nº de colaboradores con resolución de rayos según norma institucional",p2def:"Nº total de colaboradores con resolución de rayos"},
+  {cod:"INS",car:"INS-1.1",ind:"[Red] Evaluación riesgo de incendio",det:"Se evaluará que la clínica cuente con evaluación de riesgo de incendio.",p1def:"Clínica cuenta con evaluación de riesgo de incendio y documento subido a SerQ",p2def:"Clínica cuenta con evaluación de riesgo de incendio"},
+  {cod:"INS",car:"INS-1.1",ind:"[Red] Mantención preventiva red húmeda/seca",det:"Se revisará que las mantenciones de red húmeda estén realizadas acorde al protocolo.",p1def:"Nº de mantenciones preventivas de red húmeda/seca programadas",p2def:"Nº de mantenciones de red húmeda/seca realizadas"},
+  {cod:"INS",car:"INS-1.1",ind:"[Red] Recarga de extintores",det:"Se revisará que la recarga de los extintores esté vigente.",p1def:"Nº de extintores con recarga vigente",p2def:"Nº total de extintores"},
+  {cod:"INS",car:"INS-2.1",ind:"[Red] Plano de Evacuación",det:"Se evaluará que la clínica cuente con plano de evacuación en cada planta.",p1def:"Nº de planos de evacuación disponibles (1 por planta)",p2def:"Nº de plantas de la clínica"},
+  {cod:"INS",car:"INS-2.1",ind:"[Red] Plan de Evacuación (conocimiento)",det:"Se evaluará que los colaboradores conozcan el protocolo de evacuación.",p1def:"Nº colaboradores que responden correctamente sobre Plan de Evacuación",p2def:"Nº total de colaboradores entrevistados"},
+  {cod:"INS",car:"INS-3.1",ind:"[Red] Mantención preventiva Aire Acondicionado",det:"Se evaluará que se realice mantención preventiva de Aire Acondicionado.",p1def:"Nº de mantenciones de Aire Acondicionado realizadas",p2def:"Nº total de mantenciones de AC programadas"},
+  {cod:"INS",car:"INS-3.1",ind:"[Red] Mantención preventiva Techumbre/Cielo falso",det:"Se evaluará que se realice la mantención preventiva de Techumbre/Cielo Falso.",p1def:"Nº de mantenciones de techumbre/cielo falso realizadas",p2def:"Nº total de mantenciones preventivas de techumbre/cielo falso programadas"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Correcto Funcionamiento Luces de Emergencia",det:"Se realizará la revisión del correcto funcionamiento de luces de emergencia.",p1def:"Nº de chequeos de luces de emergencia que cumplen protocolo",p2def:"Nº de chequeos de luces de emergencia programados"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Correcto Funcionamiento UPS",det:"Se realizará la revisión del correcto funcionamiento de UPS.",p1def:"Nº de chequeos de UPS que cumplen protocolo",p2def:"Nº de chequeos de UPS programados"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Medición funcionamiento Luces de Emergencia",det:"Se evaluará que se haya realizado la medición del funcionamiento de luces de emergencia.",p1def:"Nº de pautas aplicadas de funcionamiento luces de emergencia",p2def:"Nº de pautas programadas"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Medición funcionamiento UPS",det:"Se evaluará que se haya realizado la medición del funcionamiento de UPS.",p1def:"Nº de pautas aplicadas de funcionamiento UPS",p2def:"Nº de pautas programadas"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Mantención preventiva TDA",det:"Se evaluará que se realice mantención preventiva del Tablero de Distribución del Alumbrado.",p1def:"Nº total de mantenciones preventivas de TDA realizadas",p2def:"Nº total de mantenciones preventivas de TDA programadas"},
+  {cod:"INS",car:"INS-3.2",ind:"[Red] Mantención preventiva UPS y luces de emergencia",det:"Se evaluará que las mantenciones preventivas estén realizadas según protocolo.",p1def:"Nº de mantenciones de iluminación de emergencia y UPS realizadas",p2def:"Nº total de mantenciones preventivas de iluminación y UPS programadas"},
+  {cod:"AP",car:"APL-1.2",ind:"[Red] Realización pautas protocolo toma de muestra sanguínea según norma",det:"Se medirá que se realicen pautas programadas de toma de muestra sanguínea según norma.",p1def:"Nº de pautas de toma de muestra sanguínea realizadas correctamente",p2def:"Nº total de pautas de toma de muestra sanguínea programadas"},
+  {cod:"AP",car:"APL-1.2",ind:"[Red] Supervisión gestión muestras sanguíneas rechazadas",det:"Se evaluará la cantidad de muestras rechazadas gestionadas acorde a protocolo.",p1def:"Nº de muestras rechazadas gestionadas acorde a protocolo",p2def:"Nº total de muestras sanguíneas rechazadas"},
+  {cod:"AP",car:"APL-1.2",ind:"[Red] Supervisión protocolo toma de muestra sanguínea según norma",det:"Se medirá que la toma de muestra sanguínea sea acorde a la norma institucional.",p1def:"Nº de pautas de toma de muestra que cumplen protocolo",p2def:"Nº total de pautas de toma de muestra aplicadas"},
+  {cod:"AP",car:"APF-1.4",ind:"[Red] Cumplimiento medición Humedad Botiquín",det:"Se evaluará que se hayan realizado las mediciones de humedad en Botiquín central.",p1def:"Nº de pautas de medición de humedad realizadas",p2def:"Nº total de pautas programadas según protocolo"},
+  {cod:"AP",car:"APF-1.4",ind:"[Red] Cumplimiento medición Tº Botiquín y Refrigeradores",det:"Se evaluará que se hayan realizado las mediciones de temperatura.",p1def:"Nº de pautas de medición de temperatura realizadas",p2def:"Nº total de pautas programadas según protocolo"},
+  {cod:"AP",car:"APF-1.4",ind:"[Red] Cumplimiento rango Humedad para conservación de medicamentos",det:"Se medirá que la conservación de medicamentos en Botiquín cumpla la humedad establecida.",p1def:"Nº de pautas de medición de humedad dentro de rango establecido",p2def:"Nº total de pautas aplicadas"},
+  {cod:"AP",car:"APF-1.4",ind:"[Red] Cumplimiento rango Tº para conservación de medicamentos",det:"Se medirá que la conservación de medicamentos cumpla la temperatura establecida.",p1def:"Nº de pautas de medición de temperatura dentro de rango establecido",p2def:"Nº total de pautas aplicadas"},
+  {cod:"AP",car:"API-1.3",ind:"[Red] Evaluación solicitud Exámenes Imagenológicos gestionados en Cruz Nacional",det:"Se medirá que la solicitud de exámenes imagenológicos cumpla con norma institucional.",p1def:"Nº de solicitudes de exámenes imagenológicos revisados que cumplen norma",p2def:"Nº total de solicitudes de exámenes imagenológicos revisados"},
+];
+
+// ══════════════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════════════
+let VISITAS=[],CHECKLISTS=[],chartInstances={},HIST_PAGE=1,autosaveTimer=null;
+const HIST_PER_PAGE=15;
+const STORAGE_KEY='cn_data_v11';
+const DRAFT_CK_KEY='cn_draft_ck_v11';
+const DRAFT_IN_KEY='cn_draft_in_v11';
+
+function saveStorage(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({visitas:VISITAS,checklists:CHECKLISTS}));}
+  catch(e){console.warn('Storage full',e);}
+}
+function loadStorage(){
+  const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+  VISITAS=s.visitas||[];CHECKLISTS=s.checklists||[];
+}
+function saveDraftCk(){
+  const draft={
+    sucursal:document.getElementById('ckSucursal').value,
+    fecha:document.getElementById('ckFecha').value,
+    auditor:document.getElementById('ckAuditor').value,
+    gerente:document.getElementById('ckGerente').value,
+    secciones:CHECKLIST_SECCIONES.map(sec=>({
+      id:sec.id,
+      obsGeneral:document.getElementById('ckobs_area_'+sec.id)?.value||'',
+      items:sec.items.map(item=>({id:item.id,val:getCkVal(item.id)}))
+    })),
+    medicamentos:[1,2,3,4,5,6].map(n=>({
+      nombre:document.getElementById('med_nombre_'+n)?.value||'',
+      real:document.getElementById('med_real_'+n)?.value||'',
+      plan:document.getElementById('med_plan_'+n)?.value||''
+    })),
+    colaboradores:getColaboradoresData(),
+    fotos:FOTOS_POR_AREA
+  };
+  try{localStorage.setItem(DRAFT_CK_KEY,JSON.stringify(draft));}catch(e){}
+  showAutosave();
+}
+function saveDraftIn(){
+  const items=INDICADORES.map((_,i)=>({
+    p1:document.getElementById('p1_'+i)?.value||'0',
+    p2:document.getElementById('p2_'+i)?.value||'0',
+    obs:document.getElementById('obs_'+i)?.value||''
+  }));
+  const draft={
+    sucursal:document.getElementById('inSucursal').value,
+    fecha:document.getElementById('inFecha').value,
+    nVisita:document.getElementById('inNumVisita').value,
+    auditor:document.getElementById('inAuditor').value,
+    items
+  };
+  try{localStorage.setItem(DRAFT_IN_KEY,JSON.stringify(draft));}catch(e){}
+  showAutosave();
+}
+function loadDraftCk(){
+  const draft=JSON.parse(localStorage.getItem(DRAFT_CK_KEY)||'null');
+  if(!draft)return;
+  if(draft.sucursal)document.getElementById('ckSucursal').value=draft.sucursal;
+  if(draft.fecha)document.getElementById('ckFecha').value=draft.fecha;
+  if(draft.auditor)document.getElementById('ckAuditor').value=draft.auditor;
+  if(draft.gerente)document.getElementById('ckGerente').value=draft.gerente;
+  calcFechaLimite();
+  draft.secciones?.forEach(secData=>{
+    secData.items?.forEach(itemData=>{if(itemData.val)setCk(itemData.id,itemData.val,secData.id,false);});
+    const obs=document.getElementById('ckobs_area_'+secData.id);
+    if(obs&&secData.obsGeneral)obs.value=secData.obsGeneral;
+  });
+  if(draft.colaboradores){
+    setTimeout(function(){recargarColaboradores(draft.colaboradores);},100);
+  }
+  if(draft.fotos){setTimeout(function(){recargarFotos(draft.fotos);},200);}
+  draft.medicamentos?.forEach((m,i)=>{
+    const n=i+1;
+    const nombre=document.getElementById('med_nombre_'+n);
+    const real=document.getElementById('med_real_'+n);
+    const plan=document.getElementById('med_plan_'+n);
+    if(nombre&&m.nombre)nombre.value=m.nombre;
+    if(real&&m.real!==undefined)real.value=m.real;
+    if(plan&&m.plan!==undefined)plan.value=m.plan;
+    calcMed(n);
+  });
+  CHECKLIST_SECCIONES.forEach(sec=>{updateCkSection(sec.id);});
+  updateCkGlobal();
+  updateBadge();
+}
+function loadDraftIn(){
+  const draft=JSON.parse(localStorage.getItem(DRAFT_IN_KEY)||'null');
+  if(!draft)return;
+  if(draft.sucursal)document.getElementById('inSucursal').value=draft.sucursal;
+  if(draft.fecha)document.getElementById('inFecha').value=draft.fecha;
+  if(draft.nVisita)document.getElementById('inNumVisita').value=draft.nVisita;
+  if(draft.auditor)document.getElementById('inAuditor').value=draft.auditor;
+  draft.items?.forEach((it,i)=>{
+    const p1=document.getElementById('p1_'+i);
+    const p2=document.getElementById('p2_'+i);
+    const obs=document.getElementById('obs_'+i);
+    if(p1)p1.value=it.p1||'0';
+    if(p2)p2.value=it.p2||'0';
+    if(obs)obs.value=it.obs||'';
+    calcRow(i);
+  });
+  updateBadge();
+}
+
+// AUTOSAVE TRIGGER
+function autosaveCk(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(saveDraftCk,400);}
+function autosaveIn(){clearTimeout(autosaveTimer);autosaveTimer=setTimeout(saveDraftIn,400);}
+function showAutosave(){
+  const el=document.getElementById('autosaveIndicator');
+  el.classList.add('visible');setTimeout(()=>el.classList.remove('visible'),2000);
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const pct=(p1,p2)=>p2>0?p1/p2:null;
+const fmtPct=v=>v===null?'—':(v*100).toFixed(1)+'%';
+const estadoClass=v=>v===null?'nd':v>=0.9?'ok':v>=0.8?'warn':'crit';
+const colorFromClass=c=>({ok:'#1A7A3C',warn:'#B88A00',crit:'#CC0000',nd:'#AAAAAA'})[c]||'#AAA';
+const bgFromClass=c=>({ok:'#D4EDDA',warn:'#FFF3CD',crit:'#F8D7DA',nd:'#F5F5F5'})[c]||'#F5F5F5';
+const labelFromClass=c=>({ok:'Óptimo',warn:'Bueno',crit:'Insuficiente',nd:'Sin datos'})[c]||'—';
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
+function formatFecha(iso){if(!iso)return'—';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
+function addDays(dateStr,days){const d=new Date(dateStr+'T12:00:00');d.setDate(d.getDate()+days);return d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function primerNombre(nombre){if(!nombre)return'';return nombre.split(' ')[0];}
+
+// DARK MODE
+function toggleDark(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('darkBtn').textContent=isDark?'🌙':'☀️';
+  localStorage.setItem('cn_theme_v11',isDark?'light':'dark');
+}
+function loadTheme(){
+  const t=localStorage.getItem('cn_theme_v11')||'light';
+  document.documentElement.setAttribute('data-theme',t);
+  document.getElementById('darkBtn').textContent=t==='dark'?'☀️':'🌙';
+}
+
+// OFFLINE DETECTION
+function updateOnlineStatus(){
+  const offline=!navigator.onLine;
+  document.getElementById('offlineBanner').classList.toggle('visible',offline);
+  document.getElementById('offlineBadge').classList.toggle('visible',offline);
+}
+
+// BADGE
+function updateBadge(){
+  const suc=document.getElementById('ckSucursal')?.value||document.getElementById('inSucursal')?.value||'';
+  const fecha=document.getElementById('ckFecha')?.value||document.getElementById('inFecha')?.value||'';
+  const auditor=document.getElementById('ckAuditor')?.value||document.getElementById('inAuditor')?.value||'';
+  const badge=document.getElementById('visitaHeaderBadge');
+  if(!suc&&!fecha){badge.textContent='Nueva visita';return;}
+  const parts=[];
+  if(suc)parts.push(suc);
+  if(fecha)parts.push(formatFecha(fecha));
+  if(auditor)parts.push(primerNombre(auditor));
+  badge.textContent=parts.join(' · ');
+}
+
+// TABS
+function switchTab(tab){
+  const ids=['checklist','indicadores','dashboard','sucursales','historial'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',ids[i]===tab));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+tab));
+  if(tab==='dashboard'){onDashModoChange();renderDashboard();}
+  if(tab==='historial')renderHistorial();
+  if(tab==='sucursales')renderSucursales();
+}
+
+// CABECERA HANDLERS
+function onCabeceraChange(){
+  calcFechaLimite();
+  updateBadge();
+  autosaveCk();
+}
+function onInCabeceraChange(){
+  updateBadge();
+  autosaveIn();
+}
+function calcFechaLimite(){
+  const f=document.getElementById('ckFecha').value;
+  document.getElementById('ckFechaLimite').value=f?addDays(f,30):'';
+}
+
+// COLLAPSE/EXPAND
+function colapsarTodo(){CHECKLIST_SECCIONES.forEach(sec=>{const b=document.getElementById('ckbody_'+sec.id);if(b)b.style.display='none';});}
+function expandirTodo(){CHECKLIST_SECCIONES.forEach(sec=>{const b=document.getElementById('ckbody_'+sec.id);if(b)b.style.display='';});}
+function toggleCkSection(secId){const b=document.getElementById('ckbody_'+secId);if(b)b.style.display=b.style.display==='none'?'':'none';}
+
+// ══════════════════════════════════════════════
+// CHECKLIST BUILD
+// ══════════════════════════════════════════════
+function buildChecklist(){
+  const cont=document.getElementById('checklistContainer');
+  let html='';
+  CHECKLIST_SECCIONES.forEach(sec=>{
+    html+=`<div class="ck-area" id="ckarea_${sec.id}">
+      <div class="ck-header" onclick="toggleCkSection('${sec.id}')">
+        <span>${sec.icon} ${sec.titulo}</span>
+        <span class="ck-badge" id="ckbadge_${sec.id}">0/${sec.items.length} · —</span>
+      </div>
+      <div class="ck-body" id="ckbody_${sec.id}">`;
+    sec.items.forEach(item=>{
+      html+=`<div class="ck-item" id="ckitem_${item.id}">
+        <div class="seg-ctrl">
+          <button class="seg-btn" id="ck_C_${item.id}" onclick="setCk('${item.id}','C','${sec.id}')">✅</button>
+          <button class="seg-btn" id="ck_N_${item.id}" onclick="setCk('${item.id}','N','${sec.id}')">❌</button>
+          <button class="seg-btn" id="ck_A_${item.id}" onclick="setCk('${item.id}','A','${sec.id}')">N/A</button>
+        </div>
+        <div class="ck-label">${item.txt}</div>
+      </div>`;
+    });
+    // Control medicamentos en Bodega
+    if(sec.tieneControlMed){
+      html+=`<div style="margin-top:10px;padding:10px;background:var(--cn-navy-lt);border-radius:8px;border:1.5px solid #C4B5FD">
+        <div style="font-size:.68rem;font-weight:700;color:#2D1B69;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">💊 Control de Medicamentos</div>
+        <table class="med-table"><thead><tr>
+          <th style="text-align:left;min-width:150px">Medicamento</th>
+          <th>Conteo Real</th><th>Planilla</th><th>Cumplimiento</th>
+        </tr></thead><tbody>
+          ${[1,2,3].map(n=>`<tr><td><input type="text" class="med-input" style="width:150px;text-align:left;padding-left:6px" id="med_nombre_${n}" placeholder="Insumo aleatorio ${n}" oninput="autosaveCk()"></td>
+            <td style="text-align:center"><input type="number" class="med-input" id="med_real_${n}" min="0" oninput="calcMed(${n});autosaveCk()"></td>
+            <td style="text-align:center"><input type="number" class="med-input" id="med_plan_${n}" min="0" oninput="calcMed(${n});autosaveCk()"></td>
+            <td class="med-pct" id="med_pct_${n}">—</td></tr>`).join('')}
+          <tr style="border-top:2px solid #7C3AED">
+          ${[{n:4,nom:'💊 Diazepam'},{n:5,nom:'💊 Midazolam'},{n:6,nom:'💊 Fentanilo'}].map(m=>`
+            <tr><td class="med-fixed">${m.nom}</td>
+            <td style="text-align:center"><input type="number" class="med-input" id="med_real_${m.n}" min="0" oninput="calcMed(${m.n});autosaveCk()"></td>
+            <td style="text-align:center"><input type="number" class="med-input" id="med_plan_${m.n}" min="0" oninput="calcMed(${m.n});autosaveCk()"></td>
+            <td class="med-pct" id="med_pct_${m.n}">—</td></tr>`).join('')}
+        </tbody></table>
+      </div>`;
+    }
+    // Módulo colaboradores
+    if(sec.tieneColaboradores){
+      html+=buildColaboradoresHTML();
+    }
+    // Observaciones generales del área
+    html+=`<label class="ck-obs-label">📝 Observaciones generales del área:</label>
+    <textarea class="ck-obs-general" id="ckobs_area_${sec.id}" placeholder="Hallazgos, mejoras, notas del área..." oninput="autosaveCk()"></textarea>`;
+    // Fotos por área
+    html+=`<div class="foto-area-wrap">
+      <span class="foto-area-label">📷 Evidencia fotográfica (máx. 5 fotos)</span>
+      <div class="fotos-grid" id="fotos_grid_${sec.id}"></div>
+      <label class="foto-upload-btn" id="foto_lbl_${sec.id}">
+        <span>📷 Agregar foto</span>
+        <input type="file" class="foto-input" id="foto_input_${sec.id}" accept="image/*" onchange="handleFotos('${sec.id}', this)">
+      </label>
+    </div>`;
+    html+=`<div class="ck-area-footer">
+      <div class="ck-progress-wrap" style="flex:1"><div class="ck-progress" id="ckprogbar_${sec.id}" style="width:0%"></div></div>
+      <div class="ck-pct-label" id="ckprog_${sec.id}" style="color:var(--muted)">—</div>
+    </div></div></div>`;
+  });
+  cont.innerHTML=html;
+}
+
+function calcMed(n){
+  const real=document.getElementById('med_real_'+n)?.value;
+  const plan=document.getElementById('med_plan_'+n)?.value;
+  const el=document.getElementById('med_pct_'+n);
+  if(!el)return;
+  if(real===''||plan===''){el.textContent='—';el.style.color='var(--muted)';return;}
+  const cumple=+real===+plan;
+  el.textContent=cumple?'✅ 100%':'❌ 0%';
+  el.style.color=cumple?'var(--ok)':'var(--crit)';
+}
+
+function setCk(itemId,val,secId,save=true){
+  ['C','N','A'].forEach(v=>{
+    const btn=document.getElementById('ck_'+v+'_'+itemId);
+    if(btn)btn.className='seg-btn'+(v===val?(v==='C'?' active-cumple':v==='N'?' active-no':' active-na'):'');
+  });
+  const item=document.getElementById('ckitem_'+itemId);
+  if(item)item.classList.remove('sin-respuesta');
+  updateCkSection(secId);
+  updateCkGlobal();
+  if(save)autosaveCk();
+}
+
+function getCkVal(itemId){
+  if(document.getElementById('ck_C_'+itemId)?.classList.contains('active-cumple'))return'C';
+  if(document.getElementById('ck_N_'+itemId)?.classList.contains('active-no'))return'N';
+  if(document.getElementById('ck_A_'+itemId)?.classList.contains('active-na'))return'A';
+  return null;
+}
+
+function updateCkSection(secId){
+  const sec=CHECKLIST_SECCIONES.find(s=>s.id===secId);if(!sec)return;
+  let c=0,n=0,evaluated=0;
+  sec.items.forEach(item=>{
+    const v=getCkVal(item.id);
+    if(v==='C'){c++;evaluated++;}
+    else if(v==='N'){n++;evaluated++;}
+    else if(v==='A'){evaluated++;}
+  });
+  const p=c+n>0?c/(c+n):null;
+  const cls=estadoClass(p);
+  const prog=document.getElementById('ckprog_'+secId);
+  const bar=document.getElementById('ckprogbar_'+secId);
+  const badge=document.getElementById('ckbadge_'+secId);
+  const area=document.getElementById('ckarea_'+secId);
+  if(prog){prog.textContent=fmtPct(p);prog.style.color=colorFromClass(cls);}
+  if(bar){bar.style.width=(p!==null?p*100:0)+'%';bar.style.background=colorFromClass(cls);}
+  if(badge)badge.textContent=`${evaluated}/${sec.items.length} · ${fmtPct(p)}`;
+  if(area){
+    area.classList.remove('area-completa','area-incompleta');
+    if(evaluated===sec.items.length)area.classList.add('area-completa');
+    else if(evaluated>0)area.classList.add('area-incompleta');
+  }
+}
+
+function updateCkGlobal(){
+  let c=0,n=0;
+  let areasCompletas=0;
+  CHECKLIST_SECCIONES.forEach(sec=>{
+    let secC=0,secN=0,secEval=0;
+    sec.items.forEach(item=>{
+      const v=getCkVal(item.id);
+      if(v==='C'){c++;secC++;secEval++;}
+      else if(v==='N'){n++;secN++;secEval++;}
+      else if(v==='A'){secEval++;}
+    });
+    if(secEval===sec.items.length)areasCompletas++;
+  });
+  const p=c+n>0?c/(c+n):null;
+  const cls=estadoClass(p);
+  const pEl=document.getElementById('ckGlobalPct'),bEl=document.getElementById('ckGlobalBar');
+  const lEl=document.getElementById('ckGlobalLabel'),aEl=document.getElementById('ckAreasCount');
+  if(pEl){pEl.textContent=fmtPct(p);pEl.style.color=colorFromClass(cls);}
+  if(bEl){bEl.style.width=(p!==null?p*100:0)+'%';bEl.style.background=colorFromClass(cls);}
+  if(lEl)lEl.textContent=p!==null?`${labelFromClass(cls)} · ${c} CUMPLE / ${n} NO CUMPLE`:'Sin evaluar';
+  if(aEl)aEl.textContent=`${areasCompletas}/${CHECKLIST_SECCIONES.length} áreas`;
+}
+
+// VALIDACION ANTES DE GUARDAR
+function validarChecklist(){
+  const suc=document.getElementById('ckSucursal').value;
+  const fecha=document.getElementById('ckFecha').value;
+  const auditor=document.getElementById('ckAuditor').value;
+  const errores=[];
+  if(!suc)errores.push({area:'Cabecera',item:'Selecciona una sucursal'});
+  if(!fecha)errores.push({area:'Cabecera',item:'Selecciona una fecha de visita'});
+  if(!auditor)errores.push({area:'Cabecera',item:'Selecciona el auditor/a'});
+  CHECKLIST_SECCIONES.forEach(sec=>{
+    sec.items.forEach(item=>{
+      if(getCkVal(item.id)===null)errores.push({area:sec.titulo,item:item.txt});
+    });
+  });
+  return errores;
+}
+
+function guardarChecklistFinal(){
+  const errores=validarChecklist();
+  const vbox=document.getElementById('validationBox');
+  const vlist=document.getElementById('validationList');
+  if(errores.length>0){
+    // Marcar ítems sin responder
+    CHECKLIST_SECCIONES.forEach(sec=>{
+      sec.items.forEach(item=>{
+        const el=document.getElementById('ckitem_'+item.id);
+        if(el)el.classList.toggle('sin-respuesta',getCkVal(item.id)===null);
+      });
+    });
+    // Agrupar errores por área
+    const porArea={};
+    errores.forEach(e=>{if(!porArea[e.area])porArea[e.area]=[];porArea[e.area].push(e.item);});
+    vlist.innerHTML=Object.entries(porArea).map(([area,items])=>
+      `<div class="validation-item"><strong>${area}:</strong> ${items.join(', ')}</div>`).join('');
+    vbox.classList.add('visible');
+    vbox.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
+  vbox.classList.remove('visible');
+  // Todo OK, guardar
+  const suc=document.getElementById('ckSucursal').value;
+  const fecha=document.getElementById('ckFecha').value;
+  const auditor=document.getElementById('ckAuditor').value;
+  const gerente=document.getElementById('ckGerente').value;
+  const secciones=CHECKLIST_SECCIONES.map(sec=>({
+    id:sec.id,titulo:sec.titulo,
+    obsGeneral:document.getElementById('ckobs_area_'+sec.id)?.value||'',
+    items:sec.items.map(item=>({id:item.id,txt:item.txt,val:getCkVal(item.id)}))
+  }));
+  const medicamentos=[1,2,3,4,5,6].map(n=>({
+    nombre:document.getElementById('med_nombre_'+n)?.value||['','','','Diazepam','Midazolam','Fentanilo'][n],
+    real:document.getElementById('med_real_'+n)?.value||'',
+    plan:document.getElementById('med_plan_'+n)?.value||''
+  }));
+  const colaboradores=getColaboradoresData();
+  const fotosData=JSON.parse(JSON.stringify(FOTOS_POR_AREA));
+  const id='ck_'+suc+'_'+fecha;
+  const registro={id,sucursal:suc,fecha,auditor,gerente,secciones,medicamentos,colaboradores,fotos:fotosData,timestamp:new Date().toISOString()};
+  const idx=CHECKLISTS.findIndex(c=>c.id===id);
+  if(idx>=0){CHECKLISTS[idx]=registro;}
+  else CHECKLISTS.push(registro);
+  saveStorage();
+  localStorage.removeItem(DRAFT_CK_KEY);
+  updateDashSelects();
+  cerrarBadgeEdicion();
+  alert('✅ Checklist guardado. Puedes verlo en el Historial.');
+}
+
+function limpiarChecklist(){
+  if(!confirm('¿Iniciar nueva visita? Se borrará el borrador actual.'))return;
+  CHECKLIST_SECCIONES.forEach(sec=>{
+    sec.items.forEach(item=>{['C','N','A'].forEach(v=>{const b=document.getElementById('ck_'+v+'_'+item.id);if(b)b.className='seg-btn';});const el=document.getElementById('ckitem_'+item.id);if(el)el.classList.remove('sin-respuesta');});
+    const obs=document.getElementById('ckobs_area_'+sec.id);if(obs)obs.value='';
+    updateCkSection(sec.id);
+  });
+  for(let i=1;i<=6;i++){
+    const r=document.getElementById('med_real_'+i);const p=document.getElementById('med_plan_'+i);const nm=document.getElementById('med_nombre_'+i);
+    if(r)r.value='';if(p)p.value='';if(nm&&i<=3)nm.value='';calcMed(i);
+  }
+  document.getElementById('ckSucursal').value='';
+  document.getElementById('ckFecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('ckAuditor').value='';
+  document.getElementById('ckGerente').value='';
+  // Limpiar colaboradores
+  NUM_COLABORADORES=2;
+  limpiarTodasLasFotos();
+  NUM_MED_ROWS=6;
+  var tbody=document.getElementById('colabTbody');
+  if(tbody){tbody.innerHTML='';for(var ci=1;ci<=2;ci++){var tr=document.createElement('tr');tr.id='colab_row_'+ci;tr.innerHTML=buildColabRow(ci).replace('<tr id="colab_row_'+ci+'">','');tbody.appendChild(tr);}}
+  document.getElementById('validationBox').classList.remove('visible');
+  calcFechaLimite();updateCkGlobal();updateBadge();
+  localStorage.removeItem(DRAFT_CK_KEY);
+}
+
+// PDF CHECKLIST — usando window.print() con estilos print optimizados
+function exportarChecklistPDF(){
+  const suc=document.getElementById('ckSucursal').value||'Sin sucursal';
+  const fecha=document.getElementById('ckFecha').value;
+  const auditor=document.getElementById('ckAuditor').value||'—';
+  const limite=document.getElementById('ckFechaLimite').value||'—';
+  const gerente=document.getElementById('ckGerente').value||'—';
+
+  let html='';
+  CHECKLIST_SECCIONES.forEach(sec=>{
+    const sItems=sec.items.map(item=>({...item,val:getCkVal(item.id)}));
+    const c=sItems.filter(i=>i.val==='C').length,n=sItems.filter(i=>i.val==='N').length;
+    const p=c+n>0?c/(c+n):null;
+    const obsArea=document.getElementById('ckobs_area_'+sec.id)?.value||'';
+    const cls=estadoClass(p);
+    html+=`<div style="margin-bottom:14px;border:1px solid #CCC;border-radius:6px;page-break-inside:avoid">
+      <div style="background:#003366;color:white;padding:6px 12px;display:flex;justify-content:space-between">
+        <span style="font-weight:700;font-size:11px">${sec.titulo}</span>
+        <span style="font-size:11px;font-weight:700">${fmtPct(p)}${p!==null?' — '+labelFromClass(cls):' (todo N/A)'}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10px">`;
+    sItems.forEach(item=>{
+      const bg=item.val==='C'?'#D4EDDA':item.val==='N'?'#F8D7DA':item.val==='A'?'#F0F0F0':'#FFFDE7';
+      html+=`<tr style="background:${bg}">
+        <td style="padding:3px 8px;border-bottom:1px solid #EEE">${item.txt}</td>
+        <td style="padding:3px 8px;border-bottom:1px solid #EEE;width:80px;text-align:center;font-weight:700;font-size:9px">${item.val==='C'?'CUMPLE':item.val==='N'?'NO CUMPLE':item.val==='A'?'N/A':'SIN RESP.'}</td>
+      </tr>`;
+    });
+    if(obsArea)html+=`<tr><td colspan="2" style="padding:4px 8px;font-style:italic;color:#555;font-size:9px;background:#FFFDF0">📝 ${obsArea}</td></tr>`;
+    html+='</table></div>';
+  });
+
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Checklist ${suc} ${formatFecha(fecha)}</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:16px;color:#000;font-size:10px;}
+    @page{margin:12mm;}
+    @media print{body{margin:0;}}
+  </style></head><body>
+  <div style="background:#003366;color:white;padding:12px 16px;border-radius:6px;margin-bottom:16px">
+    <h2 style="margin:0;font-size:14px">Checklist de Terreno · Clínica Cruz Nacional</h2>
+    <p style="margin:4px 0 0;font-size:10px;opacity:.85">
+      Sucursal: <b>${suc}</b> · Fecha: <b>${formatFecha(fecha)}</b> · Auditor/a: <b>${auditor}</b> · 
+      Gerente presente: <b>${gerente}</b> · Fecha límite resolución: <b>${limite}</b>
+    </p>
+  </div>
+  ${html}
+  <div style="margin-top:16px;padding:10px;background:#F4F4F4;border-radius:6px;font-size:9px;color:#666;display:flex;justify-content:space-between">
+    <span>Clínica Cruz Nacional · Área Clínica y Calidad · Estrictamente privado y confidencial</span>
+    <span>Generado: ${new Date().toLocaleDateString('es-CL')}</span>
+  </div>
+  <script>window.onload=function(){window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ══════════════════════════════════════════════
+// TABLA INDICADORES
+// ══════════════════════════════════════════════
+function buildTabla(){
+  const tbody=document.getElementById('tbodyIngreso');
+  let html='',lastCod='';
+  INDICADORES.forEach((ind,i)=>{
+    if(ind.cod!==lastCod){lastCod=ind.cod;html+=`<tr><td colspan="7" class="ambito-sep">${ind.cod} · ${AMBITO_NOMBRES[ind.cod]||ind.cod}</td></tr>`;}
+    html+=`<tr id="row_${i}">
+      <td style="text-align:center"><button class="expand-btn" onclick="toggleMeta(${i})">+</button></td>
+      <td><div style="font-size:.68rem;font-weight:700;color:var(--cn-blue)">${ind.car}</div></td>
+      <td><div style="font-size:.77rem;line-height:1.35">${ind.ind}</div></td>
+      <td style="text-align:center"><input type="number" id="p1_${i}" value="0" min="0" oninput="calcRow(${i});autosaveIn()"></td>
+      <td style="text-align:center"><input type="number" id="p2_${i}" value="0" min="0" oninput="calcRow(${i});autosaveIn()"></td>
+      <td class="pct-cell" id="pct_${i}" style="color:var(--muted)">—</td>
+      <td><input type="text" id="obs_${i}" placeholder="Observación…" oninput="autosaveIn()"></td>
+    </tr>
+    <tr class="meta-row" id="meta_${i}" style="display:none"><td colspan="7">
+      <div style="padding:2px 0"><span class="meta-label">Detalle:</span>${ind.det||'—'}</div>
+      <div style="padding:2px 0"><span class="meta-label">Par 1:</span>${ind.p1def||'—'}</div>
+      <div style="padding:2px 0"><span class="meta-label">Par 2:</span>${ind.p2def||'—'}</div>
+      <div style="padding:2px 0"><span class="meta-label">Fórmula:</span>(Par1÷Par2)×100</div>
+    </td></tr>`;
+  });
+  tbody.innerHTML=html;
+}
+
+function toggleMeta(i){
+  const row=document.getElementById('meta_'+i),btn=document.querySelector('#row_'+i+' .expand-btn');
+  const vis=row.style.display!=='none';row.style.display=vis?'none':'';btn.textContent=vis?'+':'−';
+}
+function calcRow(i){
+  const p1=+(document.getElementById('p1_'+i)?.value||0),p2=+(document.getElementById('p2_'+i)?.value||0);
+  const v=pct(p1,p2),cls=estadoClass(v),el=document.getElementById('pct_'+i);
+  if(el){el.textContent=fmtPct(v);el.style.color=colorFromClass(cls);}
+}
+
+function guardarVisita(){
+  const suc=document.getElementById('inSucursal').value,fecha=document.getElementById('inFecha').value;
+  const nvis=+document.getElementById('inNumVisita').value||1,auditor=document.getElementById('inAuditor').value;
+  if(!suc||!fecha){alert('Completa Sucursal y Fecha.');return;}
+  const items=INDICADORES.map((ind,i)=>({cod:ind.cod,car:ind.car,ind:ind.ind,p1:+(document.getElementById('p1_'+i)?.value||0),p2:+(document.getElementById('p2_'+i)?.value||0),obs:document.getElementById('obs_'+i)?.value||''}));
+  const id=suc+'_'+fecha+'_'+nvis;
+  const visita={id,sucursal:suc,fecha,nVisita:nvis,auditor,items,timestamp:new Date().toISOString()};
+  const idx=VISITAS.findIndex(v=>v.id===id);
+  if(idx>=0){VISITAS[idx]=visita;}
+  else VISITAS.push(visita);
+  VISITAS.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  saveStorage();localStorage.removeItem(DRAFT_IN_KEY);
+  updateDashSelects();updateBadge();
+  cerrarBadgeEdicion();
+  alert('✅ Indicadores guardados. Puedes verlos en el Historial.');
+}
+
+function limpiarFormulario(){
+  if(!confirm('¿Limpiar todos los valores?'))return;
+  INDICADORES.forEach((_,i)=>{
+    const p1=document.getElementById('p1_'+i),p2=document.getElementById('p2_'+i),obs=document.getElementById('obs_'+i);
+    if(p1)p1.value=0;if(p2)p2.value=0;if(obs)obs.value='';calcRow(i);
+  });
+  localStorage.removeItem(DRAFT_IN_KEY);
+}
+
+function exportarVisitaPDF(){
+  const suc=document.getElementById('inSucursal').value||'Sin sucursal';
+  const fecha=document.getElementById('inFecha').value;
+  const auditor=document.getElementById('inAuditor').value||'—';
+  let rows='',lastCod='';
+  INDICADORES.forEach((ind,i)=>{
+    const p2=+(document.getElementById('p2_'+i)?.value||0);if(p2===0)return;
+    const p1=+(document.getElementById('p1_'+i)?.value||0),v=pct(p1,p2),cls=estadoClass(v);
+    if(ind.cod!==lastCod){lastCod=ind.cod;rows+=`<tr><td colspan="5" style="background:#003366;color:white;font-weight:700;padding:4px 8px;font-size:10px">${ind.cod} — ${AMBITO_NOMBRES[ind.cod]||ind.cod}</td></tr>`;}
+    rows+=`<tr style="background:${bgFromClass(cls)}"><td style="padding:3px 7px;font-size:9px;font-weight:700;color:#003366">${ind.car}</td>
+      <td style="padding:3px 7px;font-size:10px">${ind.ind}</td>
+      <td style="padding:3px 7px;text-align:center;font-size:10px">${p1}</td>
+      <td style="padding:3px 7px;text-align:center;font-size:10px">${p2}</td>
+      <td style="padding:3px 7px;text-align:center;font-weight:700;color:${colorFromClass(cls)};font-size:11px">${fmtPct(v)}</td></tr>`;
+  });
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Indicadores ${suc}</title>
+  <style>body{font-family:Arial,sans-serif;margin:16px;font-size:10px;}@page{margin:10mm;size:A4 landscape;}table{width:100%;border-collapse:collapse;}</style></head><body>
+  <div style="background:#003366;color:white;padding:10px 14px;border-radius:6px;margin-bottom:14px">
+    <h2 style="margin:0;font-size:13px">Informe de Indicadores · Clínica Cruz Nacional</h2>
+    <p style="margin:3px 0 0;font-size:9px;opacity:.85">Sucursal: <b>${suc}</b> · Fecha: <b>${formatFecha(fecha)}</b> · Auditor/a: <b>${auditor}</b></p>
+  </div>
+  <table><thead><tr style="background:#003366;color:white">
+    <th style="padding:5px 7px;font-size:9px;text-align:left">Car.</th>
+    <th style="padding:5px 7px;font-size:9px;text-align:left">Indicador</th>
+    <th style="padding:5px 7px;font-size:9px">Par1</th>
+    <th style="padding:5px 7px;font-size:9px">Par2</th>
+    <th style="padding:5px 7px;font-size:9px">%</th>
+  </tr></thead><tbody>${rows}</tbody></table>
+  <div style="margin-top:14px;padding:8px;background:#F4F4F4;font-size:8px;color:#666;display:flex;justify-content:space-between">
+    <span>Clínica Cruz Nacional · Área Clínica y Calidad · Estrictamente privado y confidencial</span>
+    <span>${new Date().toLocaleDateString('es-CL')}</span>
+  </div>
+  <script>window.onload=function(){window.print();}<\/script></body></html>`);
+  win.document.close();
+}
+
+// ══════════════════════════════════════════════
+// CÁLCULO
+// ══════════════════════════════════════════════
+function calcVisita(v){
+  const items=v.items.map(it=>({...it,pct:pct(it.p1,it.p2)}));
+  const porAmbito={};
+  AMBITOS.forEach(cod=>{const vals=items.filter(it=>it.cod===cod&&it.p2>0).map(it=>it.pct).filter(x=>x!==null);porAmbito[cod]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;});
+  const allVals=Object.values(porAmbito).filter(x=>x!==null);
+  return{items,porAmbito,general:allVals.length?allVals.reduce((a,b)=>a+b,0)/allVals.length:null,nEval:items.filter(it=>it.p2>0).length,nAlerta:items.filter(it=>it.pct!==null&&it.pct<0.8).length};
+}
+function calcChecklist(ck){
+  const porSeccion={};let totalC=0,totalN=0;
+  ck.secciones.forEach(sec=>{
+    const c=(sec.items||[]).filter(i=>i.val==='C').length,n=(sec.items||[]).filter(i=>i.val==='N').length;
+    porSeccion[sec.id]={titulo:sec.titulo,c,n,p:c+n>0?c/(c+n):null};
+    totalC+=c;totalN+=n;
+  });
+  return{porSeccion,global:totalC+totalN>0?totalC/(totalC+totalN):null,totalC,totalN};
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function updateDashSelects(){
+  const sel=document.getElementById('dashSel2');if(!sel)return;
+  const curVal=sel.value;
+  if(document.getElementById('dashModo').value==='visita'){
+    sel.innerHTML='<option value="">— Seleccione —</option>';
+    VISITAS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=`${v.sucursal} · ${formatFecha(v.fecha)} · V${v.nVisita}`;sel.appendChild(o);});
+    if(curVal)sel.value=curVal;else if(VISITAS.length)sel.value=VISITAS[0].id;
+  }
+}
+function onDashModoChange(){
+  const modo=document.getElementById('dashModo').value,sel=document.getElementById('dashSel2'),lbl=document.getElementById('dashSel2Label');
+  sel.innerHTML='<option value="">— Seleccione —</option>';
+  if(modo==='visita'){lbl.textContent='Seleccionar visita';VISITAS.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=`${v.sucursal} · ${formatFecha(v.fecha)} · V${v.nVisita}`;sel.appendChild(o);});if(VISITAS.length)sel.value=VISITAS[0].id;}
+  else{lbl.textContent='Seleccionar sucursal';[...new Set(VISITAS.map(v=>v.sucursal))].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});}
+  renderDashboard();
+}
+function renderDashboard(){
+  const modo=document.getElementById('dashModo').value,val=document.getElementById('dashSel2').value,cont=document.getElementById('dashContent');
+  if(!val){cont.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Selecciona una visita para ver el dashboard.</p></div>';return;}
+  let visita=null,visitasBase=[],ck=null;
+  if(modo==='visita'){
+    visita=VISITAS.find(v=>v.id===val);
+    if(!visita){cont.innerHTML='<div class="empty"><p>Visita no encontrada.</p></div>';return;}
+    visitasBase=VISITAS.filter(v=>v.sucursal===visita.sucursal).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    ck=CHECKLISTS.find(c=>c.sucursal===visita.sucursal&&c.fecha===visita.fecha)||null;
+  }else{
+    visitasBase=VISITAS.filter(v=>v.sucursal===val).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    if(!visitasBase.length){cont.innerHTML='<div class="empty"><p>Sin datos para esta sucursal.</p></div>';return;}
+    const avgItems=INDICADORES.map((ind,idx)=>{const vals=visitasBase.map(v=>v.items[idx]).filter(it=>it&&it.p2>0);if(!vals.length)return{cod:ind.cod,car:ind.car,ind:ind.ind,p1:0,p2:0,obs:''};return{cod:ind.cod,car:ind.car,ind:ind.ind,p1:Math.round(vals.reduce((a,b)=>a+b.p1,0)/vals.length),p2:Math.round(vals.reduce((a,b)=>a+b.p2,0)/vals.length),obs:''};});
+    visita={sucursal:val,fecha:visitasBase[visitasBase.length-1].fecha,nVisita:visitasBase.length,auditor:'Promedio',items:avgItems};
+  }
+  const c=calcVisita(visita);
+  const ckStats=ck?calcChecklist(ck):null;
+  const gColor=colorFromClass(estadoClass(c.general));
+  const ckColor=ckStats?colorFromClass(estadoClass(ckStats.global)):'#CCC';
+  const ultimas6=visitasBase.slice(-6).map(vv=>({label:formatFecha(vv.fecha),val:calcVisita(vv).general}));
+  const titulo=modo==='visita'?`${visita.sucursal} · ${formatFecha(visita.fecha)} · V${visita.nVisita}`:`Promedio: ${val}`;
+  const R=72,cx=100,cy=100,sw=14;
+  const arc=p=>{const a=Math.PI*p;const x=cx+R*Math.cos(Math.PI+a);const y=cy+R*Math.sin(Math.PI+a);return`M ${cx-R} ${cy} A ${R} ${R} 0 ${p>0.5?1:0} 1 ${x.toFixed(2)} ${y.toFixed(2)}`;};
+  const gaugeVal=c.general||0;
+
+  cont.innerHTML=`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+    <span style="background:var(--cn-navy);color:white;padding:3px 12px;border-radius:20px;font-size:.7rem;font-weight:700">${titulo}</span>
+    ${visita.auditor&&visita.auditor!=='Promedio'?`<span style="background:var(--cn-navy-lt);color:var(--muted);padding:3px 10px;border-radius:20px;font-size:.7rem">👤 ${visita.auditor}</span>`:''}
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-val" style="color:${gColor}">${fmtPct(c.general)}</div><div class="kpi-lbl">Cumplimiento KPIs</div></div>
+    <div class="kpi-card"><div class="kpi-val">${c.nEval}</div><div class="kpi-lbl">KPIs Evaluados</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--crit)">${c.nAlerta}</div><div class="kpi-lbl">Alertas &lt;80%</div></div>
+  </div>
+  ${ckStats?`<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-val" style="color:${ckColor}">${fmtPct(ckStats.global)}</div><div class="kpi-lbl">Cumplimiento Checklist</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--ok)">${ckStats.totalC}</div><div class="kpi-lbl">Ítems CUMPLE</div></div>
+    <div class="kpi-card"><div class="kpi-val" style="color:var(--crit)">${ckStats.totalN}</div><div class="kpi-lbl">Ítems NO CUMPLE</div></div>
+  </div>`:''}
+  <div class="chart-row">
+    <div class="card"><div class="card-title">Cumplimiento General</div>
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 200 115" width="170" xmlns="http://www.w3.org/2000/svg">
+          <path d="${arc(1)}" fill="none" stroke="var(--border)" stroke-width="${sw}" stroke-linecap="round"/>
+          <path d="${arc(gaugeVal)}" fill="none" stroke="${gColor}" stroke-width="${sw}" stroke-linecap="round"/>
+        </svg>
+        <div class="gauge-num" style="color:${gColor}">${fmtPct(c.general)}</div>
+        <div class="gauge-lbl">${labelFromClass(estadoClass(c.general))}</div>
+      </div>
+    </div>
+    <div class="card"><div class="card-title">Radar — 8 Ámbitos</div><canvas id="chartRadarDash" style="max-height:240px"></canvas></div>
+  </div>
+  <div class="chart-row">
+    <div class="card"><div class="card-title">Ranking por Ámbito</div><canvas id="chartBarRank"></canvas></div>
+    <div class="card"><div class="card-title">Tendencia — Últimas visitas</div><canvas id="chartLine"></canvas></div>
+  </div>
+  ${ckStats?`<div class="card" style="margin-bottom:14px"><div class="card-title">Checklist por Área</div><canvas id="chartCkAreas" style="max-height:250px"></canvas></div>`:''}
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">⚠️ Alertas Críticas — KPIs &lt;80%</div>
+    <div id="tabAlertasCrit"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="exportarInformeCompleto('${visita.id||''}','${modo}','${val}')">📄 Informe Completo PDF</button>
+    <button class="btn btn-secondary" onclick="exportarVisitaCSVById('${visita.id||''}')">⬇ CSV</button>
+  </div>`;
+
+  // Radar
+  destroyChart('chartRadarDash');
+  const rData=AMBITOS.map(cod=>c.porAmbito[cod]!==null?+(c.porAmbito[cod]*100).toFixed(1):0);
+  chartInstances['chartRadarDash']=new Chart(document.getElementById('chartRadarDash').getContext('2d'),{type:'radar',data:{labels:AMBITOS,datasets:[{label:'%',data:rData,borderColor:'#0066CC',backgroundColor:'rgba(0,102,204,.12)',pointBackgroundColor:rData.map(v=>colorFromClass(estadoClass(v/100))),pointRadius:4,borderWidth:2}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{r:{min:0,max:100,ticks:{callback:v=>v+'%',backdropColor:'transparent',font:{size:9}}}}}});
+  // Bar ranking
+  destroyChart('chartBarRank');
+  const bData=AMBITOS.map(cod=>({cod,val:c.porAmbito[cod]!==null?+(c.porAmbito[cod]*100).toFixed(1):null})).filter(x=>x.val!==null).sort((a,b)=>a.val-b.val);
+  chartInstances['chartBarRank']=new Chart(document.getElementById('chartBarRank').getContext('2d'),{type:'bar',data:{labels:bData.map(x=>x.cod),datasets:[{data:bData.map(x=>x.val),backgroundColor:bData.map(x=>colorFromClass(estadoClass(x.val/100))),borderRadius:4}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}});
+  // Line
+  destroyChart('chartLine');
+  chartInstances['chartLine']=new Chart(document.getElementById('chartLine').getContext('2d'),{type:'line',data:{labels:ultimas6.map(x=>x.label),datasets:[{data:ultimas6.map(x=>x.val!==null?+(x.val*100).toFixed(1):null),borderColor:'#0066CC',backgroundColor:'rgba(0,102,204,.07)',pointBackgroundColor:ultimas6.map(x=>colorFromClass(estadoClass(x.val))),pointRadius:5,tension:0.3,fill:true,borderWidth:2}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+  // Checklist por área
+  if(ckStats&&document.getElementById('chartCkAreas')){
+    destroyChart('chartCkAreas');
+    const secIds=Object.keys(ckStats.porSeccion);
+    const ckLabels=secIds.map(id=>ckStats.porSeccion[id].titulo.replace(/^\d+\.\s*/,'').substring(0,20));
+    const ckVals=secIds.map(id=>{const p=ckStats.porSeccion[id]?.p;return p!==null&&p!==undefined?+(p*100).toFixed(1):null;});
+    const hasAny=ckVals.some(v=>v!==null);
+    if(hasAny)chartInstances['chartCkAreas']=new Chart(document.getElementById('chartCkAreas').getContext('2d'),{type:'bar',data:{labels:ckLabels,datasets:[{data:ckVals,backgroundColor:ckVals.map(v=>v!==null?colorFromClass(estadoClass(v/100)):'#CCC'),borderRadius:3}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw!==null?c.raw+'%':'N/A'}}},scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},y:{ticks:{font:{size:9}},grid:{display:false}}}}});
+  }
+  // Alertas
+  const criticos=c.items.filter(it=>it.pct!==null&&it.pct<0.8).sort((a,b)=>a.pct-b.pct);
+  const tabCrit=document.getElementById('tabAlertasCrit');
+  if(!criticos.length)tabCrit.innerHTML='<p style="color:var(--ok);font-weight:700;padding:6px 0;font-size:.82rem">🎉 Sin alertas críticas.</p>';
+  else tabCrit.innerHTML=`<div class="table-wrap"><table><thead><tr><th>Ámbito</th><th>Caract.</th><th>Indicador</th><th>Par1</th><th>Par2</th><th>%</th><th>Observación</th></tr></thead><tbody>${criticos.map(it=>`<tr><td><b>${it.cod}</b></td><td>${it.car}</td><td style="font-size:.74rem">${it.ind}</td><td style="text-align:center">${it.p1}</td><td style="text-align:center">${it.p2}</td><td class="pct-cell" style="color:var(--crit)">${fmtPct(it.pct)}</td><td style="font-size:.7rem;color:var(--muted)">${it.obs||'—'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// ══════════════════════════════════════════════
+// INFORME COMPLETO PDF — ventana nueva, sin html2pdf
+// ══════════════════════════════════════════════
+function exportarInformeCompleto(visitaId,modo,val){
+  // Obtener datos
+  var visita=VISITAS.find(function(v){return v.id===visitaId;})||null;
+  if(!visita&&modo==='sucursal'){
+    var vBase=VISITAS.filter(function(v){return v.sucursal===val;}).sort(function(a,b){return b.fecha.localeCompare(a.fecha);});
+    if(!vBase.length){alert('No hay datos para generar el informe.');return;}
+    visita=vBase[0];
+  }
+  if(!visita){alert('No hay datos de visita.');return;}
+
+  var c=calcVisita(visita);
+  var ck=CHECKLISTS.find(function(x){return x.sucursal===visita.sucursal&&x.fecha===visita.fecha;})||null;
+  var ckStats=ck?calcChecklist(ck):null;
+  var auditor=visita.auditor||'—';
+  var fechaLimite=visita.fecha?addDays(visita.fecha,30):'—';
+  var gColor=colorFromClass(estadoClass(c.general));
+  var ckColor=ckStats?colorFromClass(estadoClass(ckStats.global)):'#CCC';
+  var criticos=c.items.filter(function(it){return it.pct!==null&&it.pct<0.8;}).sort(function(a,b){return a.pct-b.pct;});
+  var medNombres=['Insumo 1','Insumo 2','Insumo 3','Diazepam','Midazolam','Fentanilo'];
+
+  // Generar gráficos como imágenes base64 usando canvas oculto
+  function crearGaugeImg(valor, color){
+    var canvas=document.createElement('canvas');
+    canvas.width=200;canvas.height=120;
+    var ctx=canvas.getContext('2d');
+    var R=72,cx=100,cy=100,sw=14;
+    // Fondo
+    ctx.beginPath();ctx.arc(cx,cy,R,Math.PI,2*Math.PI);
+    ctx.strokeStyle='#E8EFF8';ctx.lineWidth=sw;ctx.lineCap='round';ctx.stroke();
+    // Valor
+    if(valor!==null){
+      ctx.beginPath();
+      ctx.arc(cx,cy,R,Math.PI,Math.PI+(Math.PI*valor));
+      ctx.strokeStyle=color;ctx.lineWidth=sw;ctx.lineCap='round';ctx.stroke();
+    }
+    // Texto
+    ctx.fillStyle=color;ctx.font='bold 22px Arial';ctx.textAlign='center';
+    ctx.fillText(valor!==null?(valor*100).toFixed(1)+'%':'—',cx,cy+10);
+    ctx.fillStyle='#888';ctx.font='11px Arial';
+    ctx.fillText(labelFromClass(estadoClass(valor)),cx,cy+28);
+    return canvas.toDataURL('image/png');
+  }
+
+  function crearRadarImg(ambitos, valores, colores){
+    var size=280,cx=140,cy=140,r=100;
+    var canvas=document.createElement('canvas');
+    canvas.width=size;canvas.height=size;
+    var ctx=canvas.getContext('2d');
+    var n=ambitos.length;
+    // Polígono fondo
+    for(var ring=1;ring<=5;ring++){
+      ctx.beginPath();
+      for(var i=0;i<n;i++){
+        var angle=i*2*Math.PI/n - Math.PI/2;
+        var rr=r*ring/5;
+        var x=cx+rr*Math.cos(angle),y=cy+rr*Math.sin(angle);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.closePath();ctx.strokeStyle='#DDD';ctx.lineWidth=0.5;ctx.stroke();
+    }
+    // Ejes
+    for(var i=0;i<n;i++){
+      var angle=i*2*Math.PI/n-Math.PI/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);
+      ctx.lineTo(cx+r*Math.cos(angle),cy+r*Math.sin(angle));
+      ctx.strokeStyle='#DDD';ctx.lineWidth=0.5;ctx.stroke();
+    }
+    // Polígono datos
+    ctx.beginPath();
+    for(var i=0;i<n;i++){
+      var angle=i*2*Math.PI/n-Math.PI/2;
+      var val=valores[i]||0;
+      var rx=cx+(r*val/100)*Math.cos(angle);
+      var ry=cy+(r*val/100)*Math.sin(angle);
+      i===0?ctx.moveTo(rx,ry):ctx.lineTo(rx,ry);
+    }
+    ctx.closePath();ctx.fillStyle='rgba(0,102,204,0.15)';ctx.fill();
+    ctx.strokeStyle='#0066CC';ctx.lineWidth=2;ctx.stroke();
+    // Puntos y etiquetas
+    for(var i=0;i<n;i++){
+      var angle=i*2*Math.PI/n-Math.PI/2;
+      var val=valores[i]||0;
+      var rx=cx+(r*val/100)*Math.cos(angle);
+      var ry=cy+(r*val/100)*Math.sin(angle);
+      ctx.beginPath();ctx.arc(rx,ry,4,0,2*Math.PI);
+      ctx.fillStyle=colores[i];ctx.fill();
+      // Etiqueta ámbito
+      var lx=cx+(r+18)*Math.cos(angle);
+      var ly=cy+(r+18)*Math.sin(angle);
+      ctx.fillStyle='#333';ctx.font='bold 10px Arial';ctx.textAlign='center';
+      ctx.fillText(ambitos[i],lx,ly);
+    }
+    return canvas.toDataURL('image/png');
+  }
+
+  function crearBarImg(labels, valores, colores, horizontal){
+    var W=320,H=horizontal?Math.max(200,labels.length*28+40):180;
+    var canvas=document.createElement('canvas');
+    canvas.width=W;canvas.height=H;
+    var ctx=canvas.getContext('2d');
+    ctx.fillStyle='white';ctx.fillRect(0,0,W,H);
+    var maxVal=100,pad=40;
+    if(horizontal){
+      var barH=18,gap=10,startY=20;
+      labels.forEach(function(lbl,i){
+        var y=startY+i*(barH+gap);
+        // Label
+        ctx.fillStyle='#333';ctx.font='10px Arial';ctx.textAlign='right';
+        ctx.fillText(lbl.substring(0,12),pad-4,y+barH-4);
+        // Barra
+        var bw=(valores[i]||0)/maxVal*(W-pad-20);
+        ctx.fillStyle=colores[i]||'#0066CC';
+        ctx.beginPath();
+        ctx.roundRect?ctx.roundRect(pad,y,bw,barH,3):ctx.rect(pad,y,bw,barH);
+        ctx.fill();
+        // Valor
+        ctx.fillStyle='#333';ctx.font='bold 9px Arial';ctx.textAlign='left';
+        ctx.fillText((valores[i]||0)+'%',pad+bw+4,y+barH-4);
+      });
+    }
+    return canvas.toDataURL('image/png');
+  }
+
+  function crearLineaImg(labels, valores){
+    var W=320,H=160,padL=30,padB=25,padT=10,padR=10;
+    var canvas=document.createElement('canvas');
+    canvas.width=W;canvas.height=H;
+    var ctx=canvas.getContext('2d');
+    ctx.fillStyle='white';ctx.fillRect(0,0,W,H);
+    var n=labels.length;
+    if(n<2){return canvas.toDataURL('image/png');}
+    var innerW=W-padL-padR,innerH=H-padB-padT;
+    // Eje Y líneas
+    [0,25,50,75,100].forEach(function(v){
+      var y=padT+innerH-(v/100*innerH);
+      ctx.strokeStyle='#EEE';ctx.lineWidth=0.5;
+      ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+      ctx.fillStyle='#999';ctx.font='9px Arial';ctx.textAlign='right';
+      ctx.fillText(v+'%',padL-3,y+3);
+    });
+    // Línea datos
+    ctx.beginPath();
+    valores.forEach(function(v,i){
+      var x=padL+i*(innerW/(n-1));
+      var y=padT+innerH-((v||0)/100*innerH);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle='#0066CC';ctx.lineWidth=2;ctx.stroke();
+    // Puntos
+    valores.forEach(function(v,i){
+      var x=padL+i*(innerW/(n-1));
+      var y=padT+innerH-((v||0)/100*innerH);
+      ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);
+      ctx.fillStyle=colorFromClass(estadoClass((v||0)/100));ctx.fill();
+      // Etiqueta fecha
+      ctx.fillStyle='#666';ctx.font='8px Arial';ctx.textAlign='center';
+      ctx.fillText(labels[i],x,H-8);
+    });
+    return canvas.toDataURL('image/png');
+  }
+
+  function crearCkBarImg(labels, valores){
+    return crearBarImg(labels, valores, valores.map(function(v){return colorFromClass(estadoClass(v/100));}), true);
+  }
+
+  // Generar imágenes
+  var gaugeKPIImg = crearGaugeImg(c.general, gColor);
+  var gaugeCKImg = ckStats ? crearGaugeImg(ckStats.global, ckColor) : null;
+
+  var radarVals = AMBITOS.map(function(cod){return c.porAmbito[cod]!==null?+(c.porAmbito[cod]*100).toFixed(1):0;});
+  var radarColores = radarVals.map(function(v){return colorFromClass(estadoClass(v/100));});
+  var radarImg = crearRadarImg(AMBITOS, radarVals, radarColores);
+
+  var bData = AMBITOS.map(function(cod){return{cod:cod,val:c.porAmbito[cod]!==null?+(c.porAmbito[cod]*100).toFixed(1):null};}).filter(function(x){return x.val!==null;}).sort(function(a,b){return a.val-b.val;});
+  var rankingImg = crearBarImg(bData.map(function(x){return x.cod;}), bData.map(function(x){return x.val;}), bData.map(function(x){return colorFromClass(estadoClass(x.val/100));}), true);
+
+  var visitasBase = VISITAS.filter(function(v){return v.sucursal===visita.sucursal;}).sort(function(a,b){return a.fecha.localeCompare(b.fecha);}).slice(-6);
+  var lineaImg = crearLineaImg(visitasBase.map(function(v){return formatFecha(v.fecha);}), visitasBase.map(function(v){return calcVisita(v).general!==null?+(calcVisita(v).general*100).toFixed(1):0;}));
+
+  var ckBarImg = null;
+  if(ckStats){
+    var secIds=Object.keys(ckStats.porSeccion);
+    var ckLabels=secIds.map(function(id){return ckStats.porSeccion[id].titulo.replace(/^\d+\.\s*/,'').substring(0,15);});
+    var ckVals=secIds.map(function(id){var p=ckStats.porSeccion[id].p;return p!==null?+(p*100).toFixed(1):0;});
+    ckBarImg = crearCkBarImg(ckLabels, ckVals);
+  }
+
+  // Construir HTML del informe
+  var H='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  H+='<title>Informe '+visita.sucursal+' '+formatFecha(visita.fecha)+'</title>';
+  H+='<style>body{font-family:Arial,sans-serif;margin:0;padding:0;color:#000;}@page{margin:12mm;}@media print{.np{display:none!important;}.pb{page-break-after:always;}}table{width:100%;border-collapse:collapse;}h2{font-size:13px;color:#003366;border-bottom:2px solid #0066CC;padding-bottom:5px;margin:14px 0 8px;}h3{font-size:11px;color:#003366;margin:10px 0 5px;}input[type=text],input[type=date]{font-family:Arial,sans-serif;}.graf-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;}.graf-box{flex:1;min-width:140px;border:1px solid #DDD;border-radius:6px;padding:8px;text-align:center;}.graf-title{font-size:9px;color:#003366;font-weight:700;text-transform:uppercase;margin-bottom:6px;}</style></head><body><div style="padding:20px">';
+
+  // Botón imprimir
+  H+='<div class="np" style="text-align:right;margin-bottom:10px"><button onclick="window.print()" style="background:#003366;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700">🖨 Imprimir / Guardar PDF</button></div>';
+
+  // PORTADA con logo
+  H+='<div style="background:#003366;color:white;padding:24px;border-radius:8px;margin-bottom:18px;text-align:center" class="pb">';
+  H+='<div style="background:white;border-radius:8px;padding:10px 20px;display:inline-block;margin-bottom:14px">';
+  H+='<img src="'+LOGO+'" style="height:50px;width:auto;" alt="Cruz Nacional">';
+  H+='</div>';
+  H+='<h1 style="color:white;font-size:17px;margin:0 0 5px">INFORME VISITA DE CALIDAD EN TERRENO</h1>';
+  H+='<p style="color:rgba(255,255,255,.8);font-size:10px;margin:0 0 18px">Área Clínica y Calidad</p>';
+  H+='<div style="display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center">';
+  [['Sucursal',visita.sucursal],['Fecha',formatFecha(visita.fecha)],['Auditor/a',auditor],['Fecha Límite',fechaLimite]].forEach(function(it){
+    H+='<div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:9px 14px;min-width:110px"><div style="font-size:8px;opacity:.7;text-transform:uppercase">'+it[0]+'</div><div style="font-size:12px;font-weight:800;margin-top:3px">'+it[1]+'</div></div>';
+  });
+  H+='</div></div>';
+
+  // RESUMEN EJECUTIVO
+  H+='<h2>1. RESUMEN EJECUTIVO</h2>';
+
+  // Gauges
+  H+='<div class="graf-row">';
+  H+='<div class="graf-box"><div class="graf-title">Cumplimiento KPIs</div><img src="'+gaugeKPIImg+'" style="width:140px;height:auto"><div style="font-size:8px;color:#888;margin-top:2px">'+c.nEval+' indicadores evaluados</div></div>';
+  if(gaugeCKImg) H+='<div class="graf-box"><div class="graf-title">Cumplimiento Checklist</div><img src="'+gaugeCKImg+'" style="width:140px;height:auto"><div style="font-size:8px;color:#888;margin-top:2px">'+(ckStats?ckStats.totalC+' cumple / '+ckStats.totalN+' no cumple':'')+'</div></div>';
+  H+='</div>';
+
+  // Tabla ámbitos + Radar
+  H+='<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
+  H+='<div style="flex:2;min-width:200px">';
+  H+='<h3>Cumplimiento por Ámbito</h3>';
+  H+='<table style="margin-bottom:8px"><thead><tr style="background:#003366;color:white"><th style="padding:4px 7px;font-size:9px;text-align:left">Ámbito</th><th style="padding:4px 7px;font-size:9px;text-align:center">%</th><th style="padding:4px 7px;font-size:9px;text-align:center">Estado</th></tr></thead><tbody>';
+  AMBITOS.forEach(function(cod){var v=c.porAmbito[cod],cls=estadoClass(v);H+='<tr style="background:'+bgFromClass(cls)+'"><td style="padding:3px 7px;font-size:9px;font-weight:600">'+cod+' — '+AMBITO_NOMBRES[cod]+'</td><td style="padding:3px 7px;font-size:9px;font-weight:800;color:'+colorFromClass(cls)+';text-align:center">'+fmtPct(v)+'</td><td style="padding:3px 7px;font-size:9px;font-weight:700;color:'+colorFromClass(cls)+';text-align:center">'+labelFromClass(cls)+'</td></tr>';});
+  H+='</tbody></table></div>';
+  H+='<div style="flex:1;min-width:160px;text-align:center"><h3>Radar 8 Ámbitos</h3><img src="'+radarImg+'" style="width:160px;height:auto"></div>';
+  H+='</div>';
+
+  // Ranking + Tendencia
+  H+='<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">';
+  H+='<div style="flex:1;min-width:200px;text-align:center"><h3>Ranking por Ámbito</h3><img src="'+rankingImg+'" style="width:100%;max-width:320px;height:auto"></div>';
+  H+='<div style="flex:1;min-width:200px;text-align:center"><h3>Tendencia Últimas Visitas</h3><img src="'+lineaImg+'" style="width:100%;max-width:320px;height:auto"></div>';
+  H+='</div>';
+
+  // Alertas
+  if(criticos.length){H+='<div style="background:#F8D7DA;border:1px solid #CC0000;border-radius:6px;padding:8px 12px;margin-bottom:10px"><div style="color:#CC0000;font-weight:800;font-size:10px;margin-bottom:4px">⚠️ '+criticos.length+' Alerta'+( criticos.length!==1?'s':'')+' Crítica'+(criticos.length!==1?'s':'')+' — KPIs bajo 80%</div>';criticos.forEach(function(it){H+='<div style="font-size:9px;color:#842029">['+it.car+'] '+it.ind+' → <strong>'+fmtPct(it.pct)+'</strong>'+(it.obs?' — '+it.obs:'')+'</div>';});H+='</div>';}
+  else{H+='<div style="background:#D4EDDA;border:1px solid #1A7A3C;border-radius:6px;padding:7px 10px;color:#1A7A3C;font-weight:700;font-size:9px;margin-bottom:10px">✅ Sin alertas críticas</div>';}
+
+  // CHECKLIST
+  H+='<div class="pb"><h2>2. CHECKLIST DE TERRENO</h2>';
+  if(ckBarImg) H+='<div style="text-align:center;margin-bottom:10px"><h3>Cumplimiento por Área</h3><img src="'+ckBarImg+'" style="width:100%;max-width:400px;height:auto"></div>';
+  if(ck&&ckStats){
+    ck.secciones.forEach(function(sec){
+      var stats=ckStats.porSeccion[sec.id];if(!stats)return;
+      var ic=(sec.items||[]).filter(function(i){return i.val==='C';});
+      var ino=(sec.items||[]).filter(function(i){return i.val==='N';});
+      var ina=(sec.items||[]).filter(function(i){return i.val==='A';});
+      var pBg=stats.p!==null?bgFromClass(estadoClass(stats.p)):'#F5F5F5';
+      H+='<div style="margin-bottom:8px;border:1px solid #CCC;border-radius:6px;page-break-inside:avoid">';
+      H+='<div style="background:#003366;color:white;padding:5px 10px;display:flex;justify-content:space-between"><span style="font-weight:700;font-size:9px">'+sec.titulo+'</span><span style="font-size:9px;font-weight:700">'+fmtPct(stats.p)+(stats.p===null?' (todo N/A)':' — '+labelFromClass(estadoClass(stats.p)))+'</span></div>';
+      H+='<div style="padding:5px 9px;background:'+pBg+'">';
+      H+='<div style="font-size:8px;margin-bottom:3px"><span style="color:#1A7A3C;font-weight:700">✅ '+ic.length+' CUMPLE</span>&nbsp;&nbsp;<span style="color:#CC0000;font-weight:700">❌ '+ino.length+' NO CUMPLE</span>&nbsp;&nbsp;<span style="color:#888">N/A: '+ina.length+'</span></div>';
+      ic.forEach(function(i){H+='<div style="font-size:8px;color:#000;padding:1px 0">✅ '+i.txt+'</div>';});
+      ino.forEach(function(i){H+='<div style="font-size:8px;color:#CC0000;font-weight:700;padding:1px 0">❌ '+i.txt+'</div>';});
+      if(sec.obsGeneral)H+='<div style="margin-top:3px;padding:3px 7px;background:rgba(255,255,255,.7);border-radius:4px;border-left:3px solid #B88A00;font-style:italic;color:#555;font-size:8px">📝 '+sec.obsGeneral+'</div>';
+      // Fotos del área en el informe
+      var fotosArea = (ck.fotos&&ck.fotos[sec.id])||[];
+      if(fotosArea.length){
+        H+='<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:5px">';
+        fotosArea.forEach(function(dataURL){H+='<img src="'+dataURL+'" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid #DDD">';});
+        H+='</div>';
+      }
+      H+='</div></div>';
+    });
+  }else{H+='<p style="font-size:9px;color:#888;font-style:italic">Sin checklist registrado para esta visita.</p>';}
+  H+='</div>';
+
+  // MEDICAMENTOS
+  if(ck&&ck.medicamentos&&ck.medicamentos.some(function(m){return m.real!==''||m.plan!=='';})){
+    H+='<h2>2b. CONTRALORÍA DE INSUMOS</h2>';
+    H+='<table><thead><tr style="background:#2D1B69;color:white"><th style="padding:4px 8px;font-size:9px;text-align:left">Insumo / Medicamento</th><th style="padding:4px 8px;font-size:9px;text-align:center">Estado</th></tr></thead><tbody>';
+    ck.medicamentos.forEach(function(m,i){
+      if(m.real===''&&m.plan==='')return;
+      var nom=m.nombre||medNombres[i];
+      var cum=m.real!==''&&m.plan!==''&&+m.real===+m.plan;
+      var bg=cum?'#D4EDDA':'#F8D7DA';
+      var col=cum?'#1A7A3C':'#CC0000';
+      H+='<tr style="background:'+bg+'"><td style="padding:3px 8px;font-size:9px;font-weight:600">'+nom+'</td><td style="padding:3px 8px;text-align:center;font-weight:700;color:'+col+';font-size:9px">'+(cum?'✅ CUMPLE':'❌ NO CUMPLE')+'</td></tr>';
+    });
+    H+='</tbody></table>';
+  }
+
+  // COLABORADORES
+  if(ck&&ck.colaboradores&&ck.colaboradores.length){
+    var colabConDatos=ck.colaboradores.filter(function(c){return c.val||c.pregIdx!==null;});
+    if(colabConDatos.length){
+      H+='<h2>2c. PREGUNTAS AL EQUIPO</h2>';
+      H+='<table><thead><tr style="background:#1A3A5C;color:white"><th style="padding:4px 8px;font-size:9px;text-align:left">Colaborador</th><th style="padding:4px 8px;font-size:9px;text-align:left">Pregunta realizada</th><th style="padding:4px 8px;font-size:9px;text-align:center;width:90px">Resultado</th></tr></thead><tbody>';
+      colabConDatos.forEach(function(col){
+        var nom=col.nombre||'Colaborador '+col.n;
+        var preg=col.pregIdx!==null&&col.pregIdx!==undefined?((col.pregIdx+1)+'. '+PREGUNTAS_COLAB[col.pregIdx]):'—';
+        var bg=col.val==='C'?'#D4EDDA':col.val==='N'?'#F8D7DA':'#F5F5F5';
+        var colr=col.val==='C'?'#1A7A3C':col.val==='N'?'#CC0000':'#888';
+        var lbl=col.val==='C'?'✅ CUMPLE':col.val==='N'?'❌ NO CUMPLE':'—';
+        H+='<tr style="background:'+bg+'"><td style="padding:3px 8px;font-size:9px;font-weight:600">'+nom+'</td><td style="padding:3px 8px;font-size:9px">'+preg+'</td><td style="padding:3px 8px;text-align:center;font-weight:700;color:'+colr+';font-size:9px">'+lbl+'</td></tr>';
+      });
+      H+='</tbody></table>';
+    }
+  }
+
+  // INDICADORES
+  H+='<h2>3. INDICADORES DE CALIDAD</h2>';
+  H+='<table><thead><tr style="background:#003366;color:white"><th style="padding:4px 6px;font-size:8px;text-align:left">Car.</th><th style="padding:4px 6px;font-size:8px;text-align:left">Indicador</th><th style="padding:4px 6px;font-size:8px;text-align:center">Par1</th><th style="padding:4px 6px;font-size:8px;text-align:center">Par2</th><th style="padding:4px 6px;font-size:8px;text-align:center">%</th></tr></thead><tbody>';
+  var lastCodI='';
+  c.items.filter(function(it){return it.p2>0;}).forEach(function(it){
+    if(it.cod!==lastCodI){lastCodI=it.cod;H+='<tr><td colspan="5" style="background:#003366;color:white;font-weight:700;padding:4px 6px;font-size:8px">'+it.cod+' — '+(AMBITO_NOMBRES[it.cod]||it.cod)+'</td></tr>';}
+    var cls=estadoClass(it.pct);
+    H+='<tr style="background:'+bgFromClass(cls)+'"><td style="padding:2px 6px;font-size:7px;font-weight:700;color:#003366">'+it.car+'</td><td style="padding:2px 6px;font-size:8px">'+it.ind+'</td><td style="padding:2px 6px;text-align:center;font-size:8px">'+it.p1+'</td><td style="padding:2px 6px;text-align:center;font-size:8px">'+it.p2+'</td><td style="padding:2px 6px;text-align:center;font-weight:700;color:'+colorFromClass(cls)+';font-size:9px">'+fmtPct(it.pct)+'</td></tr>';
+  });
+  H+='</tbody></table>';
+
+  // PLAN DE ACCIÓN
+  var hallazgosPA=[].concat(
+    criticos.map(function(it){return{tipo:'KPI',txt:'['+it.car+'] '+it.ind,pct:fmtPct(it.pct)};}),
+    ck?ck.secciones.reduce(function(acc,sec){(sec.items||[]).filter(function(i){return i.val==='N';}).forEach(function(i){acc.push({tipo:'Checklist',txt:sec.titulo+': '+i.txt,pct:'NO CUMPLE'});});return acc;},[]):[]
+  );
+  H+='<h2>4. PLAN DE ACCIÓN</h2>';
+  if(hallazgosPA.length){
+    H+='<p style="font-size:8px;color:#888;margin-bottom:6px" class="np">Completa los campos antes de imprimir.</p>';
+    H+='<table><thead><tr style="background:#003366;color:white"><th style="padding:4px 7px;font-size:8px;text-align:left">Tipo</th><th style="padding:4px 7px;font-size:8px;text-align:left">Hallazgo</th><th style="padding:4px 7px;font-size:8px">Resultado</th><th style="padding:4px 7px;font-size:8px;text-align:left">Responsable</th><th style="padding:4px 7px;font-size:8px;text-align:left">Acción</th><th style="padding:4px 7px;font-size:8px;text-align:center">Fecha</th></tr></thead><tbody>';
+    hallazgosPA.forEach(function(h){H+='<tr style="border-bottom:1px solid #EEE"><td style="padding:3px 6px;font-size:8px;font-weight:700;color:#003366">'+h.tipo+'</td><td style="padding:3px 6px;font-size:8px">'+h.txt+'</td><td style="padding:3px 6px;text-align:center;font-size:8px;font-weight:700;color:#CC0000">'+h.pct+'</td><td style="padding:3px 6px"><input type="text" placeholder="Responsable..." style="width:100%;border:1px solid #DDD;border-radius:4px;padding:2px 4px;font-size:8px"></td><td style="padding:3px 6px"><input type="text" placeholder="Acción..." style="width:100%;border:1px solid #DDD;border-radius:4px;padding:2px 4px;font-size:8px"></td><td style="padding:3px 6px"><input type="date" style="width:100%;border:1px solid #DDD;border-radius:4px;padding:2px 4px;font-size:8px"></td></tr>';});
+    H+='</tbody></table>';
+  }else{H+='<p style="font-size:9px;color:#1A7A3C;font-weight:700">✅ Sin hallazgos críticos — no se requiere plan de acción.</p>';}
+
+  // PIE
+  H+='<div style="margin-top:14px;padding:9px 12px;background:#F4F6FA;border-top:2px solid #003366;border-radius:6px;display:flex;justify-content:space-between;font-size:8px;color:#666">';
+  H+='<span><strong style="color:#003366">Clínica Cruz Nacional</strong> · Área Clínica y Calidad · Estrictamente privado y confidencial<br>Generado el '+new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})+'</span>';
+  H+='<span style="text-align:right;color:#003366;font-weight:700">'+auditor+'<br><span style="font-weight:400;color:#666">Auditor/a de Calidad</span></span></div>';
+  H+='</div></body></html>';
+
+  // Usar Blob para evitar límite de tamaño con fotos
+  var blob = new Blob([H], {type:'text/html;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  // Nombre del archivo con sucursal y fecha
+  var nombreArchivo = 'Informe_Calidad_'+visita.sucursal.replace(/ /g,'_')+'_'+visita.fecha+'.html';
+  // Abrir en nueva pestaña para imprimir
+  var win = window.open(url, '_blank');
+  if(!win){
+    // Fallback: descargar directamente
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  setTimeout(function(){URL.revokeObjectURL(url);}, 60000);
+}
+
+function renderSucursales(){
+  const mes=document.getElementById('sucMes').value,cont=document.getElementById('sucContent');
+  let vf=mes?VISITAS.filter(v=>v.fecha.startsWith(mes)):VISITAS;
+  if(!vf.length){cont.innerHTML='<div class="empty"><div class="empty-icon">🏥</div><p>No hay visitas'+(mes?' para '+mes.split('-').reverse().join('/'):'')+' registradas.</p></div>';return;}
+  const porSuc={};SUCURSALES.forEach(s=>{const vs=vf.filter(v=>v.sucursal===s);if(vs.length)porSuc[s]=vs.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];});
+  const sucConData=SUCURSALES.filter(s=>porSuc[s]);
+  if(!sucConData.length){cont.innerHTML='<div class="empty"><div class="empty-icon">🏥</div><p>Sin datos para el periodo.</p></div>';return;}
+  const calcs={};sucConData.forEach(s=>{calcs[s]=calcVisita(porSuc[s]);});
+  let hml=`<div class="card" style="margin-bottom:14px;overflow-x:auto"><div class="card-title">Heatmap${mes?' — '+mes.split('-').reverse().join('/'):''}</div>
+  <table class="heatmap-table"><thead><tr><th style="text-align:left;min-width:160px">Ámbito</th>${sucConData.map(s=>`<th>${s}</th>`).join('')}</tr></thead><tbody>
+  <tr><td class="row-label" style="font-weight:800">⭐ Cumplimiento Global</td>${sucConData.map(s=>{const v=calcs[s].general,cl=estadoClass(v);return`<td class="hm-${cl}" style="font-size:.9rem;font-weight:800">${fmtPct(v)}</td>`;}).join('')}</tr>
+  ${AMBITOS.map(cod=>`<tr><td class="row-label">${cod} · ${AMBITO_NOMBRES[cod]}</td>${sucConData.map(s=>{const v=calcs[s].porAmbito[cod],cl=estadoClass(v);return`<td class="hm-${cl}">${fmtPct(v)}</td>`;}).join('')}</tr>`).join('')}
+  </tbody></table></div>
+  <div class="card" style="margin-bottom:14px"><div class="card-title">Cumplimiento Global por Sucursal</div><canvas id="chartSucGlobal" style="max-height:190px"></canvas></div>`;
+  cont.innerHTML=hml;
+  destroyChart('chartSucGlobal');
+  chartInstances['chartSucGlobal']=new Chart(document.getElementById('chartSucGlobal').getContext('2d'),{type:'bar',data:{labels:sucConData,datasets:[{data:sucConData.map(s=>{const v=calcs[s].general;return v!==null?+(v*100).toFixed(1):0;}),backgroundColor:sucConData.map(s=>colorFromClass(estadoClass(calcs[s].general))),borderRadius:6}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}}}});
+}
+function exportarSucursalesCSV(){
+  const mes=document.getElementById('sucMes').value;
+  let vf=mes?VISITAS.filter(v=>v.fecha.startsWith(mes)):VISITAS;
+  const porSuc={};SUCURSALES.forEach(s=>{const vs=vf.filter(v=>v.sucursal===s);if(vs.length)porSuc[s]=vs.sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];});
+  const sucConData=SUCURSALES.filter(s=>porSuc[s]);
+  const calcs={};sucConData.forEach(s=>{calcs[s]=calcVisita(porSuc[s]);});
+  const rows=[['Ámbito',...sucConData]];
+  rows.push(['Cumplimiento Global',...sucConData.map(s=>fmtPct(calcs[s].general))]);
+  AMBITOS.forEach(cod=>rows.push([`${cod} · ${AMBITO_NOMBRES[cod]}`,...sucConData.map(s=>fmtPct(calcs[s].porAmbito[cod]))]));
+  descargarCSV(rows,'benchmarking'+(mes?'_'+mes:'')+'.csv');
+}
+
+// ══════════════════════════════════════════════
+// HISTORIAL
+// ══════════════════════════════════════════════
+function renderHistorial(){
+  const filtSuc=document.getElementById('filtSucursal').value,filtDesde=document.getElementById('filtDesde').value;
+  const filtHasta=document.getElementById('filtHasta').value,filtAud=document.getElementById('filtAuditor').value;
+  const cont=document.getElementById('histContent');
+  const allKeys=new Set([...VISITAS.map(v=>v.sucursal+'|'+v.fecha),...CHECKLISTS.map(c=>c.sucursal+'|'+c.fecha)]);
+  let registros=[...allKeys].map(k=>{
+    const[suc,fecha]=k.split('|');
+    const v=VISITAS.find(x=>x.sucursal===suc&&x.fecha===fecha)||null;
+    const ck=CHECKLISTS.find(x=>x.sucursal===suc&&x.fecha===fecha)||null;
+    return{suc,fecha,visita:v,checklist:ck,auditor:v?.auditor||ck?.auditor||''};
+  });
+  if(filtSuc)registros=registros.filter(r=>r.suc===filtSuc);
+  if(filtDesde)registros=registros.filter(r=>r.fecha>=filtDesde);
+  if(filtHasta)registros=registros.filter(r=>r.fecha<=filtHasta);
+  if(filtAud)registros=registros.filter(r=>r.auditor===filtAud);
+  registros.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(!registros.length){cont.innerHTML='<div class="empty"><div class="empty-icon">📈</div><p>No se encontraron registros.</p></div>';return;}
+  const totalPages=Math.ceil(registros.length/HIST_PER_PAGE);
+  if(HIST_PAGE>totalPages)HIST_PAGE=1;
+  const page=registros.slice((HIST_PAGE-1)*HIST_PER_PAGE,HIST_PAGE*HIST_PER_PAGE);
+  let html=`<div class="card"><div class="card-title">Historial (${registros.length} registros)</div>
+  <div class="table-wrap"><table class="hist-tbl"><thead><tr>
+    <th>Fecha</th><th>Sucursal</th><th>Auditor/a</th>
+    <th style="text-align:center">KPIs %</th><th style="text-align:center">Checklist %</th>
+    <th style="text-align:center">Estado</th><th style="text-align:center">Editable</th><th style="text-align:center">Acciones</th>
+  </tr></thead><tbody>`;
+  page.forEach(r=>{
+    const cv=r.visita?calcVisita(r.visita):null;
+    const ck=r.checklist?calcChecklist(r.checklist):null;
+    const cls=estadoClass(cv?.general??null);
+    const ckCls=estadoClass(ck?.global??null);
+    html+=`<tr>
+      <td>${formatFecha(r.fecha)}</td><td><strong>${r.suc}</strong></td>
+      <td>${primerNombre(r.auditor)||'—'}</td>
+      <td class="pct-cell" style="color:${colorFromClass(cls)}">${cv?fmtPct(cv.general):'—'}</td>
+      <td class="pct-cell" style="color:${colorFromClass(ckCls)}">${ck?fmtPct(ck.global):'—'}</td>
+      <td style="text-align:center"><span class="badge badge-${cls}">${labelFromClass(cls)}</span></td>
+      <td style="text-align:center">${puedeEditar(r.fecha)?'<span class="badge badge-ok">✓ Editable</span>':'<span class="badge badge-nd">Bloqueado</span>'}</td>
+      <td><div class="action-btns">
+        ${r.visita?`<button class="btn btn-secondary btn-sm" onclick="verEnDashboard('${r.visita.id}')" title="Dashboard">📊</button>`:''}
+        ${r.checklist?`<button class="btn btn-secondary btn-sm" onclick="verChecklist('${r.checklist.id}')" title="Ver Checklist">✅</button>`:''}
+        ${r.visita?`<button class="btn btn-primary btn-sm" onclick="exportarInformeCompleto('${r.visita.id}','visita','${r.suc}')" title="Informe PDF">📄</button>`:''}
+        ${puedeEditar(r.fecha)?r.visita?`<button class="btn btn-secondary btn-sm" onclick="editarIndicadores('${r.visita.id}')" title="Editar Indicadores">✏️📋</button>`:'':``}
+        ${puedeEditar(r.fecha)?r.checklist?`<button class="btn btn-secondary btn-sm" onclick="editarChecklist('${r.checklist.id}')" title="Editar Checklist">✏️✅</button>`:'':``}
+        ${r.visita?`<button class="btn btn-danger btn-sm" onclick="eliminarVisita('${r.visita.id}')" title="Eliminar">🗑️</button>`:''}
+      </div></td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div>`;
+  if(totalPages>1){html+=`<div class="pagination">`;for(let i=1;i<=totalPages;i++)html+=`<button class="page-btn${i===HIST_PAGE?' active':''}" onclick="goHistPage(${i})">${i}</button>`;html+=`</div>`;}
+  html+=`</div>`;cont.innerHTML=html;
+}
+
+function goHistPage(p){HIST_PAGE=p;renderHistorial();}
+
+function verEnDashboard(id){
+  switchTab('dashboard');
+  document.getElementById('dashModo').value='visita';
+  onDashModoChange();
+  document.getElementById('dashSel2').value=id;
+  renderDashboard();
+}
+
+function verChecklist(ckId){
+  const ck=CHECKLISTS.find(c=>c.id===ckId);if(!ck)return;
+  const ckStats=calcChecklist(ck);
+  let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <span style="background:var(--cn-navy);color:white;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700">${ck.sucursal}</span>
+    <span style="background:var(--cn-blue-lt);color:var(--cn-navy);padding:3px 10px;border-radius:20px;font-size:.7rem">${formatFecha(ck.fecha)}</span>
+    <span style="background:var(--cn-navy-lt);color:var(--muted);padding:3px 10px;border-radius:20px;font-size:.7rem">👤 ${ck.auditor||'—'}</span>
+    <span style="font-size:.88rem;font-weight:800;color:${colorFromClass(estadoClass(ckStats.global))}">Global: ${fmtPct(ckStats.global)}</span>
+  </div>`;
+  ck.secciones.forEach(sec=>{
+    const stats=ckStats.porSeccion[sec.id];if(!stats)return;
+    const no=(sec.items||[]).filter(i=>i.val==='N');
+    html+=`<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="background:var(--cn-navy);color:white;padding:6px 12px;display:flex;justify-content:space-between;font-size:.78rem;font-weight:700">
+        <span>${sec.titulo}</span><span style="color:${colorFromClass(estadoClass(stats.p))}">${fmtPct(stats.p)}</span>
+      </div>
+      <div style="padding:7px 12px;font-size:.76rem">
+        ${no.length?'<div style="color:var(--crit);font-weight:700;margin-bottom:3px">❌ No cumplen:</div>'+no.map(i=>`<div style="padding:1px 0 1px 10px;color:var(--crit)">• ${i.txt}</div>`).join(''):''}
+        ${sec.obsGeneral?`<div style="margin-top:5px;padding:5px 8px;background:var(--cn-navy-lt);border-radius:5px;font-style:italic;color:var(--muted)">📝 ${sec.obsGeneral}</div>`:''}
+        ${!no.length&&!sec.obsGeneral?'<span style="color:var(--ok)">✅ Sin hallazgos</span>':''}
+      </div>
+    </div>`;
+  });
+  // Colaboradores
+  if(ck.colaboradores&&ck.colaboradores.length){
+    var colabConDatos=ck.colaboradores.filter(function(c){return c.val||c.pregIdx!==null;});
+    if(colabConDatos.length){
+      html+='<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">';
+      html+='<div style="background:#1A3A5C;color:white;padding:6px 12px;font-weight:700;font-size:.78rem">👥 Preguntas al Equipo</div>';
+      html+='<table style="width:100%;border-collapse:collapse;font-size:.76rem"><thead><tr style="background:var(--cn-navy-lt)"><th style="padding:4px 8px;text-align:left">Colaborador</th><th style="padding:4px 8px">Pregunta</th><th style="padding:4px 8px;text-align:center">Resultado</th></tr></thead><tbody>';
+      colabConDatos.forEach(function(c){
+        var nom=c.nombre||'Colaborador '+c.n;
+        var preg=c.pregIdx!==null&&c.pregIdx!==undefined?PREGUNTAS_COLAB[c.pregIdx]:'—';
+        var col=c.val==='C'?'var(--ok)':'var(--crit)';
+        var lbl=c.val==='C'?'✅ CUMPLE':c.val==='N'?'❌ NO CUMPLE':'—';
+        html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:5px 8px;font-weight:600">'+nom+'</td><td style="padding:5px 8px;font-size:.74rem">'+preg+'</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:'+col+'">'+lbl+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+    }
+  }
+  document.getElementById('modalTitulo').textContent=`Checklist · ${ck.sucursal} · ${formatFecha(ck.fecha)}`;
+  document.getElementById('modalContenido').innerHTML=html;
+  document.getElementById('modalDetalle').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modalDetalle').classList.remove('open');}
+
+function exportarVisitaCSVById(id){
+  const v=VISITAS.find(x=>x.id===id);if(!v)return;
+  const c=calcVisita(v);
+  const rows=[['Sucursal','Fecha','V°','Auditor/a','Ámbito','Car.','Indicador','Par1','Par2','%','Obs']];
+  c.items.forEach(it=>rows.push([v.sucursal,v.fecha,v.nVisita,v.auditor,it.cod,it.car,`"${it.ind}"`,it.p1,it.p2,it.pct!==null?(it.pct*100).toFixed(1)+'%':'',`"${it.obs}"`]));
+  descargarCSV(rows,`visita_V${v.nVisita}_${v.fecha.replace(/-/g,'')}_${v.sucursal.toLowerCase().replace(/ /g,'_')}.csv`);
+}
+
+function eliminarVisita(id){
+  if(!confirm('¿Eliminar esta visita? Esta acción no se puede deshacer.'))return;
+  VISITAS=VISITAS.filter(v=>v.id!==id);saveStorage();updateDashSelects();renderHistorial();
+}
+
+function descargarCSV(rows,filename){
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+}
+
+var PREGUNTAS_COLAB=["¿Cuál es el protocolo de acción frente a una Clave Roja? ¿Cuál es su rol en ese proceso?","¿Cómo se activa una Clave Azul? ¿Qué pasos sigue usted?","¿Cuál es el proceso de traslado de un paciente a una urgencia de alta complejidad?","¿Conoce y utiliza el Portal de Colaboradores / Google Site institucional?","¿Cómo le explica a un paciente que quiere hacer un reclamo? ¿Qué medios están disponibles?","¿Cómo puede un paciente o colaborador acceder al Comité de Ética?","¿Qué hace usted en caso de un accidente cortopunzante? Describa los pasos.","¿Conoce el protocolo de exposición a VIH? ¿Qué pasos seguiría?","¿Qué es un evento adverso o centinela? ¿Qué hace y dónde lo notifica?"];
+
+var NUM_COLABORADORES = 2;
+
+function buildColaboradoresHTML(){
+  var h = '<div style="margin-top:12px;padding:10px;background:var(--cn-navy-lt);border-radius:8px;border:1.5px solid #1A3A5C">';
+  h += '<div style="font-size:.68rem;font-weight:700;color:#1A3A5C;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">👥 Preguntas al Equipo</div>';
+  h += '<table class="colab-table"><thead><tr>';
+  h += '<th style="width:150px">Colaborador</th>';
+  h += '<th>Pregunta realizada</th>';
+  h += '<th style="width:130px;text-align:center">Resultado</th>';
+  h += '</tr></thead><tbody id="colabTbody">';
+  for(var i=1;i<=2;i++){
+    h += buildColabRow(i);
+  }
+  h += '</tbody></table>';
+  h += '<button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="agregarColaborador()">+ Agregar colaborador</button>';
+  h += '</div>';
+  return h;
+}
+
+function buildColabRow(n){
+  var opts = '<option value="">— Seleccione pregunta —</option>';
+  for(var i=0;i<PREGUNTAS_COLAB.length;i++){
+    opts += '<option value="'+i+'">'+(i+1)+'. '+PREGUNTAS_COLAB[i]+'</option>';
+  }
+  var r = '<tr id="colab_row_'+n+'">';
+  r += '<td><input type="text" class="colab-nombre-input" id="colab_nombre_'+n+'" placeholder="Colaborador '+n+'" oninput="autosaveCk()"></td>';
+  r += '<td><select class="colab-pregunta-select" id="colab_preg_'+n+'" onchange="autosaveCk()">'+opts+'</select></td>';
+  r += '<td><div class="seg-ctrl" style="justify-content:center">';
+  r += '<button class="seg-btn" id="colab_C_'+n+'" onclick="setColab('+n+',&quot;C&quot;)">✅ CUMPLE</button>';
+  r += '<button class="seg-btn" id="colab_N_'+n+'" onclick="setColab('+n+',&quot;N&quot;)">❌ NO CUMPLE</button>';
+  r += '</div></td>';
+  if(n>2){
+    r += '<td><button class="btn btn-danger btn-sm" onclick="eliminarColaborador('+n+')">✕</button></td>';
+  }
+  r += '</tr>';
+  return r;
+}
+
+function agregarColaborador(){
+  NUM_COLABORADORES++;
+  var tbody = document.getElementById('colabTbody');
+  if(!tbody) return;
+  var tr = document.createElement('tr');
+  tr.id = 'colab_row_'+NUM_COLABORADORES;
+  tr.innerHTML = buildColabRow(NUM_COLABORADORES).replace('<tr id="colab_row_'+NUM_COLABORADORES+'">', '');
+  tbody.appendChild(tr);
+  autosaveCk();
+}
+
+function eliminarColaborador(n){
+  var row = document.getElementById('colab_row_'+n);
+  if(row) row.remove();
+  autosaveCk();
+}
+
+function setColab(n, val){
+  ['C','N'].forEach(function(v){
+    var btn = document.getElementById('colab_'+v+'_'+n);
+    if(btn) btn.className = 'seg-btn' + (v===val ? (v==='C' ? ' active-cumple' : ' active-no') : '');
+  });
+  autosaveCk();
+}
+
+function getColabVal(n){
+  var btnC = document.getElementById('colab_C_'+n);
+  var btnN = document.getElementById('colab_N_'+n);
+  if(btnC && btnC.classList.contains('active-cumple')) return 'C';
+  if(btnN && btnN.classList.contains('active-no')) return 'N';
+  return null;
+}
+
+function getColaboradoresData(){
+  var tbody = document.getElementById('colabTbody');
+  if(!tbody) return [];
+  var rows = tbody.querySelectorAll('tr[id^="colab_row_"]');
+  var data = [];
+  rows.forEach(function(row){
+    var n = row.id.replace('colab_row_','');
+    var nombre = (document.getElementById('colab_nombre_'+n)||{}).value || '';
+    var pregIdx = (document.getElementById('colab_preg_'+n)||{}).value;
+    var val = getColabVal(n);
+    data.push({n:+n, nombre:nombre, pregIdx:pregIdx!==''?+pregIdx:null, val:val});
+  });
+  return data;
+}
+
+function recargarColaboradores(colabData){
+  if(!colabData || !colabData.length) return;
+  // Esperar a que el DOM esté listo
+  var tbody = document.getElementById('colabTbody');
+  if(!tbody) return;
+  // Limpiar filas extra
+  var rows = tbody.querySelectorAll('tr');
+  rows.forEach(function(r){ r.remove(); });
+  colabData.forEach(function(c){
+    var tr = document.createElement('tr');
+    tr.id = 'colab_row_'+c.n;
+    tr.innerHTML = buildColabRow(c.n).replace('<tr id="colab_row_'+c.n+'">', '');
+    tbody.appendChild(tr);
+    // Restaurar valores
+    var nm = document.getElementById('colab_nombre_'+c.n);
+    var pr = document.getElementById('colab_preg_'+c.n);
+    if(nm && c.nombre) nm.value = c.nombre;
+    if(pr && c.pregIdx !== null) pr.value = c.pregIdx;
+    if(c.val) setColab(c.n, c.val);
+  });
+  NUM_COLABORADORES = colabData.length > 0 ? Math.max.apply(null, colabData.map(function(c){return c.n;})) : 2;
+}
+
+
+
+// ══════════════════════════════════════════════
+// EDICION DESDE HISTORIAL
+// ══════════════════════════════════════════════
+var DIAS_EDITABLE = 30;
+
+function puedeEditar(fecha){
+  if(!fecha) return false;
+  var dias = Math.floor((new Date() - new Date(fecha+'T12:00:00')) / (1000*60*60*24));
+  return dias <= DIAS_EDITABLE;
+}
+
+function editarIndicadores(visitaId){
+  var v = VISITAS.find(function(x){return x.id===visitaId;});
+  if(!v){alert('Visita no encontrada.');return;}
+  if(!puedeEditar(v.fecha)){
+    alert('Esta visita tiene más de 30 días y no puede ser modificada.');return;
+  }
+  // Cargar en pestaña indicadores
+  document.getElementById('inSucursal').value = v.sucursal;
+  document.getElementById('inFecha').value = v.fecha;
+  document.getElementById('inNumVisita').value = v.nVisita;
+  document.getElementById('inAuditor').value = v.auditor||'';
+  v.items.forEach(function(it,i){
+    var p1=document.getElementById('p1_'+i);
+    var p2=document.getElementById('p2_'+i);
+    var obs=document.getElementById('obs_'+i);
+    if(p1)p1.value=it.p1||0;
+    if(p2)p2.value=it.p2||0;
+    if(obs)obs.value=it.obs||'';
+    calcRow(i);
+  });
+  updateBadge();
+  switchTab('indicadores');
+  // Mostrar badge de edición
+  mostrarBadgeEdicion('Editando indicadores: '+v.sucursal+' '+formatFecha(v.fecha));
+}
+
+function editarChecklist(ckId){
+  var ck = CHECKLISTS.find(function(x){return x.id===ckId;});
+  if(!ck){alert('Checklist no encontrado.');return;}
+  if(!puedeEditar(ck.fecha)){
+    alert('Este checklist tiene más de 30 días y no puede ser modificado.');return;
+  }
+  // Limpiar estado actual incluyendo fotos
+  limpiarTodasLasFotos();
+  NUM_MED_ROWS=6;
+  CHECKLIST_SECCIONES.forEach(function(sec){
+    sec.items.forEach(function(item){
+      ['C','N','A'].forEach(function(v){
+        var b=document.getElementById('ck_'+v+'_'+item.id);
+        if(b)b.className='seg-btn';
+      });
+    });
+    var obs=document.getElementById('ckobs_area_'+sec.id);
+    if(obs)obs.value='';
+    updateCkSection(sec.id);
+  });
+  // Cargar datos
+  document.getElementById('ckSucursal').value = ck.sucursal;
+  document.getElementById('ckFecha').value = ck.fecha;
+  document.getElementById('ckAuditor').value = ck.auditor||'';
+  if(ck.gerente)document.getElementById('ckGerente').value = ck.gerente;
+  calcFechaLimite();
+  // Restaurar ítems
+  ck.secciones.forEach(function(secData){
+    (secData.items||[]).forEach(function(itemData){
+      if(itemData.val) setCk(itemData.id, itemData.val, secData.id, false);
+    });
+    var obs=document.getElementById('ckobs_area_'+secData.id);
+    if(obs&&secData.obsGeneral) obs.value=secData.obsGeneral;
+    updateCkSection(secData.id);
+  });
+  // Restaurar medicamentos
+  if(ck.medicamentos){
+    ck.medicamentos.forEach(function(m,i){
+      var n=i+1;
+      var nm=document.getElementById('med_nombre_'+n);
+      var rl=document.getElementById('med_real_'+n);
+      var pl=document.getElementById('med_plan_'+n);
+      if(nm&&m.nombre&&n<=3)nm.value=m.nombre;
+      if(rl&&m.real!==undefined)rl.value=m.real;
+      if(pl&&m.plan!==undefined)pl.value=m.plan;
+      calcMed(n);
+    });
+  }
+  // Restaurar colaboradores
+  if(ck.colaboradores&&ck.colaboradores.length){
+    setTimeout(function(){recargarColaboradores(ck.colaboradores);},100);
+  }
+  // Restaurar fotos
+  if(ck.fotos){
+    setTimeout(function(){recargarFotos(ck.fotos);},200);
+  }
+  updateCkGlobal();
+  updateBadge();
+  switchTab('checklist');
+  mostrarBadgeEdicion('Editando checklist: '+ck.sucursal+' '+formatFecha(ck.fecha));
+}
+
+function mostrarBadgeEdicion(texto){
+  var badge = document.getElementById('editBadge');
+  if(!badge){
+    badge = document.createElement('div');
+    badge.id = 'editBadge';
+    badge.style.cssText = 'position:fixed;bottom:60px;right:16px;background:var(--warn);color:white;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;';
+    badge.innerHTML = '<span id="editBadgeText"></span><button onclick="cerrarBadgeEdicion()" style="background:rgba(255,255,255,.3);border:none;color:white;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:.72rem">✕</button>';
+    document.body.appendChild(badge);
+  }
+  document.getElementById('editBadgeText').textContent = '✏️ '+texto;
+  badge.style.display = 'flex';
+}
+
+function cerrarBadgeEdicion(){
+  var badge = document.getElementById('editBadge');
+  if(badge) badge.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+// FOTOS POR ÁREA
+// ══════════════════════════════════════════════
+var FOTOS_POR_AREA = {}; // {secId: [dataURL, ...]}
+var MAX_FOTOS = 5;
+
+function handleFotos(secId, input){
+  if(!input.files || !input.files.length) return;
+  if(!FOTOS_POR_AREA[secId]) FOTOS_POR_AREA[secId] = [];
+  var files = Array.from(input.files);
+  var disponibles = MAX_FOTOS - FOTOS_POR_AREA[secId].length;
+  if(disponibles <= 0){alert('Máximo '+MAX_FOTOS+' fotos por área.');input.value='';return;}
+  files = files.slice(0, disponibles);
+  files.forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      // Comprimir la imagen
+      var img = new Image();
+      img.onload = function(){
+        var canvas = document.createElement('canvas');
+        var maxW = 800, maxH = 600;
+        var w = img.width, h = img.height;
+        if(w > maxW){h = h * maxW / w; w = maxW;}
+        if(h > maxH){w = w * maxH / h; h = maxH;}
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var dataURL = canvas.toDataURL('image/jpeg', 0.7);
+        FOTOS_POR_AREA[secId].push(dataURL);
+        renderFotos(secId);
+        saveDraftCk(); // Guardar inmediatamente incluyendo fotos
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function renderFotos(secId){
+  var grid = document.getElementById('fotos_grid_'+secId);
+  var lbl = document.getElementById('foto_lbl_'+secId);
+  if(!grid) return;
+  var fotos = FOTOS_POR_AREA[secId] || [];
+  grid.innerHTML = '';
+  fotos.forEach(function(dataURL, i){
+    var img = document.createElement('img');
+    img.src = dataURL;
+    img.className = 'foto-thumb';
+    img.title = 'Clic para eliminar';
+    (function(idx, sid){img.onclick = function(){
+      if(confirm('¿Eliminar esta foto?')){
+        FOTOS_POR_AREA[sid].splice(idx,1);
+        renderFotos(sid);
+        saveDraftCk();
+      }
+    };})(i, secId);
+    grid.appendChild(img);
+  });
+  // Ocultar botón si ya hay 5
+  if(lbl) lbl.style.display = fotos.length >= MAX_FOTOS ? 'none' : 'inline-flex';
+}
+
+function limpiarTodasLasFotos(){
+  FOTOS_POR_AREA={};
+  // Limpiar visualmente todos los grids de fotos
+  CHECKLIST_SECCIONES.forEach(function(sec){
+    var grid=document.getElementById('fotos_grid_'+sec.id);
+    if(grid) grid.innerHTML='';
+    var lbl=document.getElementById('foto_lbl_'+sec.id);
+    if(lbl) lbl.style.display='inline-flex';
+  });
+}
+
+function recargarFotos(fotosData){
+  // Primero limpiar todo visualmente
+  limpiarTodasLasFotos();
+  if(!fotosData) return;
+  FOTOS_POR_AREA = fotosData;
+  // Luego renderizar solo las áreas que tienen fotos
+  Object.keys(FOTOS_POR_AREA).forEach(function(secId){
+    renderFotos(secId);
+  });
+}
+
+// ══════════════════════════════════════════════
+// FILAS DINAMICAS MEDICAMENTOS
+// ══════════════════════════════════════════════
+var NUM_MED_ROWS = 6; // 3 aleatorios + 3 fijos
+
+function agregarFilaMed(){
+  var tbody = document.getElementById('medTbody');
+  if(!tbody) return;
+  NUM_MED_ROWS++;
+  var n = NUM_MED_ROWS;
+  var tr = document.createElement('tr');
+  tr.id = 'med_row_'+n;
+  tr.innerHTML = '<td><input type="text" class="med-input" style="width:150px;text-align:left;padding-left:6px" id="med_nombre_'+n+'" placeholder="Insumo '+n+'" oninput="autosaveCk()"></td>'+
+    '<td style="text-align:center"><input type="number" class="med-input" id="med_real_'+n+'" min="0" oninput="calcMed('+n+');autosaveCk()"></td>'+
+    '<td style="text-align:center"><input type="number" class="med-input" id="med_plan_'+n+'" min="0" oninput="calcMed('+n+');autosaveCk()"></td>'+
+    '<td class="med-pct" id="med_pct_'+n+'">—</td>'+
+    '<td><button class="btn btn-danger btn-sm" onclick="eliminarFilaMed('+n+')">✕</button></td>';
+  tbody.appendChild(tr);
+  autosaveCk();
+}
+
+function eliminarFilaMed(n){
+  var row = document.getElementById('med_row_'+n);
+  if(row) row.remove();
+  autosaveCk();
+}
+
+// ══════════════════════════════════════════════
+// PWA SERVICE WORKER
+// ══════════════════════════════════════════════
+function registerSW(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(()=>console.log('SW registrado')).catch(e=>console.log('SW error',e));
+  }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function init(){
+  loadTheme();
+  buildTabla();
+  buildChecklist();
+  // Migrar datos v6 si v8 está vacío
+  var v6d=localStorage.getItem('cn_data_v10'),v8d=localStorage.getItem('cn_data_v11');
+  if(v6d&&!v8d){localStorage.setItem('cn_data_v11',v6d);}
+  loadStorage();
+  loadDraftCk();
+  loadDraftIn();
+  updateDashSelects();
+  const today=new Date().toISOString().slice(0,10);
+  if(!document.getElementById('ckFecha').value)document.getElementById('ckFecha').value=today;
+  if(!document.getElementById('inFecha').value)document.getElementById('inFecha').value=today;
+  document.getElementById('sucMes').value=today.slice(0,7);
+  calcFechaLimite();
+  updateBadge();
+  window.addEventListener('online',updateOnlineStatus);
+  window.addEventListener('offline',updateOnlineStatus);
+  updateOnlineStatus();
+  registerSW();
+}
+init();
+</script>
+</body>
+</html>
